@@ -22,7 +22,7 @@ export function Footer() {
                   <circle cx="20" cy="10" r="2"></circle>
                 </svg>
               </div>
-              <span className="font-semibold text-foreground">HealthCare+</span>
+              <span className="font-semibold text-foreground">Rajapakse Pharmacy</span>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               Your trusted healthcare partner for medicines, medical devices, and professional consultations.
@@ -72,7 +72,7 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Mail className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <span className="text-muted-foreground">support@healthcare.com</span>
+                <span className="text-muted-foreground">support@rajapaksepharmacy.com</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
