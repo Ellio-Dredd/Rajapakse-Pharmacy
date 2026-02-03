@@ -49,7 +49,7 @@ export function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
             </svg>
           </div>
           <div>
-            <h2 className="font-semibold">HealthCare+</h2>
+            <h2 className="font-semibold">Rajapakse Pharmacy</h2>
             <p className="text-xs text-muted-foreground">Admin Panel</p>
           </div>
         </div>

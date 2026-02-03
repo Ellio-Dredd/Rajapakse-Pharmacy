@@ -28,7 +28,7 @@ export function Navbar({ cartItemCount = 0, onCartClick, onLoginClick }: NavbarP
                 <circle cx="20" cy="10" r="2"></circle>
               </svg>
             </div>
-            <span className="text-xl font-semibold text-foreground">HealthCare+</span>
+            <span className="text-xl font-semibold text-foreground">Rajapakse Pharmacy</span>
           </div>
           <div className="hidden md:flex items-center gap-6">
             <a href="#shop" className="text-sm text-muted-foreground hover:text-primary transition-colors">
