@@ -79,6 +79,10 @@ export function AdminAppointmentManagement() {
   };
 
   const handleCancelAppointment = async (appointmentId: string) => {
+    if (!confirm('Are you sure you want to cancel this appointment?')) {
+      return;
+    }
+
     try {
       await appointmentsAPI.cancel(appointmentId);
       toast.success('Appointment cancelled successfully');
@@ -86,6 +90,21 @@ export function AdminAppointmentManagement() {
     } catch (error) {
       console.error('Error cancelling appointment:', error);
       toast.error('Failed to cancel appointment');
+    }
+  };
+
+  const handleDeleteAppointment = async (appointmentId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this appointment? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await appointmentsAPI.delete(appointmentId);
+      toast.success('Appointment deleted successfully');
+      fetchAppointments(); // Refresh the list
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      toast.error('Failed to delete appointment');
     }
   };
 
@@ -250,6 +269,7 @@ export function AdminAppointmentManagement() {
                           <DropdownMenuItem>Reschedule</DropdownMenuItem>
                           <DropdownMenuItem>Send Reminder</DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive" onClick={() => handleCancelAppointment(appointment.id)}>Cancel</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteAppointment(appointment.id)}>Delete</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>

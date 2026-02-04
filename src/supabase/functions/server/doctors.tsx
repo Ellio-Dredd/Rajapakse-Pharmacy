@@ -70,10 +70,21 @@ doctors.get('/:id', async (c) => {
 doctors.post('/', async (c) => {
   try {
     const body = await c.req.json();
-    const { name, specialization, experience, image, education, languages, about, category } = body;
+    const { 
+      name, 
+      specialization, 
+      qualifications,
+      experience_years, 
+      consultation_fee,
+      email,
+      phone,
+      image_url, 
+      bio,
+      availability
+    } = body;
     
-    if (!name || !specialization || experience === undefined) {
-      return errorResponse('Missing required fields: name, specialization, experience', 400);
+    if (!name || !specialization || !consultation_fee) {
+      return errorResponse('Missing required fields: name, specialization, consultation_fee', 400);
     }
     
     const { data, error } = await supabase
@@ -81,15 +92,16 @@ doctors.post('/', async (c) => {
       .insert([{
         name,
         specialization,
-        experience,
-        image,
-        education: education || [],
-        languages: languages || [],
-        about,
-        category,
+        qualifications: qualifications || null,
+        experience_years: experience_years || null,
+        consultation_fee: parseFloat(consultation_fee),
+        email: email || null,
+        phone: phone || null,
+        image_url: image_url || null,
+        bio: bio || null,
+        availability: availability !== undefined ? availability : true,
         rating: 0,
         reviews: 0,
-        available: true,
       }])
       .select()
       .single();

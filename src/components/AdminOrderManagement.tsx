@@ -33,6 +33,11 @@ export function AdminOrderManagement() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [orderToUpdate, setOrderToUpdate] = useState<any>(null);
+  const [newStatus, setNewStatus] = useState('');
 
   useEffect(() => {
     fetchOrders();
@@ -122,9 +127,9 @@ export function AdminOrderManagement() {
             <div className="flex gap-3">
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input type="text" placeholder="Search orders..." className="pl-9" />
+                <Input type="text" placeholder="Search orders..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
-              <Select defaultValue="all">
+              <Select defaultValue="all" value={statusFilter} onValueChange={(value) => setStatusFilter(value)}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -154,42 +159,51 @@ export function AdminOrderManagement() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order) => (
-                  <tr key={order.id} className="border-b last:border-0 hover:bg-muted/50">
-                    <td className="py-3 px-4 font-medium">{order.id}</td>
-                    <td className="py-3 px-4">
-                      <div>
-                        <div className="font-medium">{order.customer}</div>
-                        <div className="text-sm text-muted-foreground">{order.email}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      {Array.isArray(order.items) ? order.items.length : order.items}
-                    </td>
-                    <td className="py-3 px-4 font-medium">{formatCurrency(order.total_amount)}</td>
-                    <td className="py-3 px-4">
-                      <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground">{order.created_at}</td>
-                    <td className="py-3 px-4 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setSelectedOrder(order)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>Update Status</DropdownMenuItem>
-                          <DropdownMenuItem>Download Invoice</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                ))}
+                {orders
+                  .filter((order) =>
+                    order.id.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                    (statusFilter === 'all' || order.status.toLowerCase() === statusFilter)
+                  )
+                  .map((order) => (
+                    <tr key={order.id} className="border-b last:border-0 hover:bg-muted/50">
+                      <td className="py-3 px-4 font-medium">{order.id}</td>
+                      <td className="py-3 px-4">
+                        <div>
+                          <div className="font-medium">{order.customer}</div>
+                          <div className="text-sm text-muted-foreground">{order.email}</div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {Array.isArray(order.items) ? order.items.length : order.items}
+                      </td>
+                      <td className="py-3 px-4 font-medium">{formatCurrency(order.total_amount)}</td>
+                      <td className="py-3 px-4">
+                        <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground">{order.created_at}</td>
+                      <td className="py-3 px-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setSelectedOrder(order)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              setOrderToUpdate(order);
+                              setNewStatus(order.status.toLowerCase());
+                              setIsStatusDialogOpen(true);
+                            }}>Update Status</DropdownMenuItem>
+                            <DropdownMenuItem>Download Invoice</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -288,6 +302,105 @@ export function AdminOrderManagement() {
                     </SelectContent>
                   </Select>
                   <Button className="w-full mt-3" onClick={() => handleUpdateStatus(selectedOrder.id, selectedOrder.status.toLowerCase())}>Update Status</Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Status Dialog */}
+      <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+        <DialogContent className="w-full sm:max-w-lg overflow-y-auto">
+          {orderToUpdate && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Update Order Status</DialogTitle>
+                <DialogDescription>{orderToUpdate.id}</DialogDescription>
+              </DialogHeader>
+              <div className="mt-6 space-y-6">
+                <div>
+                  <h4 className="mb-3">Customer Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Name:</span>
+                      <span className="font-medium">{orderToUpdate.customer}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Email:</span>
+                      <span className="font-medium">{orderToUpdate.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Order Date:</span>
+                      <span className="font-medium">{orderToUpdate.created_at}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="mb-3">Shipping Address</h4>
+                  <p className="text-sm text-muted-foreground">{orderToUpdate.shipping_address}</p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="mb-3">Order Items</h4>
+                  <div className="space-y-3">
+                    {(orderToUpdate.products || orderToUpdate.items || []).map((product: any, index: number) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <div>
+                          <p className="font-medium">{product.name}</p>
+                          <p className="text-muted-foreground">Qty: {product.quantity}</p>
+                        </div>
+                        <p className="font-medium">{formatCurrency(product.price * product.quantity)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="font-medium">{formatCurrency(orderToUpdate.total_amount)}</span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-muted-foreground">Shipping</span>
+                    <span className="font-medium">$5.99</span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span className="font-medium">$7.99</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between">
+                    <span className="font-semibold">Total</span>
+                    <span className="font-semibold text-lg text-primary">
+                      {formatCurrency(orderToUpdate.total_amount + 5.99 + 7.99)}
+                    </span>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="mb-3">Order Status</h4>
+                  <Select defaultValue={newStatus} onValueChange={setNewStatus}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button className="w-full mt-3" onClick={() => handleUpdateStatus(orderToUpdate.id, newStatus)}>Update Status</Button>
                 </div>
               </div>
             </>

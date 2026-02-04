@@ -1,4 +1,13 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useOutletContext, Outlet } from 'react-router';
+import { AdminDashboardHome } from './components/AdminDashboardHome';
+import { AdminProductManagement } from './components/AdminProductManagement';
+import { AdminCategoryManagement } from './components/AdminCategoryManagement';
+import { AdminOrderManagement } from './components/AdminOrderManagement';
+import { AdminUserManagement } from './components/AdminUserManagement';
+import { AdminDoctorManagement } from './components/AdminDoctorManagement';
+import { AdminAppointmentManagement } from './components/AdminAppointmentManagement';
+import { AdminReports } from './components/AdminReports';
+import { AdminSettings } from './components/AdminSettings';
+import { SeedDatabaseButton } from './components/SeedDatabaseButton';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { LandingPage } from './components/LandingPage';
@@ -15,18 +24,11 @@ import { SignupPage } from './components/SignupPage';
 import { AboutUsPage } from './components/AboutUsPage';
 import { ContactUsPage } from './components/ContactUsPage';
 import { AdminSidebar } from './components/AdminSidebar';
-import { AdminDashboardHome } from './components/AdminDashboardHome';
-import { AdminProductManagement } from './components/AdminProductManagement';
-import { AdminCategoryManagement } from './components/AdminCategoryManagement';
-import { AdminOrderManagement } from './components/AdminOrderManagement';
-import { AdminUserManagement } from './components/AdminUserManagement';
-import { AdminAppointmentManagement } from './components/AdminAppointmentManagement';
-import { AdminReports } from './components/AdminReports';
-import { AdminSettings } from './components/AdminSettings';
-import { SeedDatabaseButton } from './components/SeedDatabaseButton';
+import { Head } from './components/Head';
 import { Button } from './components/ui/button';
 import { Shield, Settings } from 'lucide-react';
 import { Toaster } from './components/ui/sonner';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useOutletContext, Outlet } from 'react-router';
 import { useState, useEffect } from 'react';
 import { supabase } from './utils/supabase/client';
 import { projectId, publicAnonKey } from './utils/supabase/info';
@@ -88,22 +90,25 @@ function CustomerLayout() {
   const navigate = useNavigate();
   const [showSetup, setShowSetup] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: 'Paracetamol 500mg - 20 Tablets',
-      price: 5.99,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1596522016734-8e6136fe5cfa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwcGlsbHMlMjBtZWRpY2luZSUyMHBoYXJtYWN5fGVufDF8fHx8MTc3MDA1MjcyNnww&ixlib=rb-4.1.0&q=80&w=1080',
-    },
-    {
-      id: 2,
-      name: 'Digital Blood Pressure Monitor',
-      price: 49.99,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1763070282912-08b63e2eb427?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwZGV2aWNlJTIwaGVhbHRoY2FyZSUyMGVxdWlwbWVudHxlbnwxfHx8fDE3NzAwNTI3MjZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    },
-  ]);
+  
+  // Initialize cart from localStorage or empty array
+  const [cartItems, setCartItems] = useState<any[]>(() => {
+    const savedCart = localStorage.getItem('rajapakse_cart');
+    if (savedCart) {
+      try {
+        return JSON.parse(savedCart);
+      } catch (e) {
+        console.error('Error parsing saved cart:', e);
+        return [];
+      }
+    }
+    return [];
+  });
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('rajapakse_cart', JSON.stringify(cartItems));
+  }, [cartItems]);
 
   // Check if current user is admin
   useEffect(() => {
@@ -159,13 +164,26 @@ function CustomerLayout() {
   };
 
   const handleUpdateQuantity = (id: number, quantity: number) => {
+    if (quantity < 1) return;
+    
     setCartItems(cartItems.map(item =>
       item.id === id ? { ...item, quantity } : item
     ));
+    
+    toast.success('Cart updated', {
+      description: 'Item quantity has been updated',
+    });
   };
 
   const handleRemoveItem = (id: number) => {
+    const item = cartItems.find(i => i.id === id);
     setCartItems(cartItems.filter(item => item.id !== id));
+    
+    if (item) {
+      toast.success('Item removed', {
+        description: `${item.name} has been removed from your cart`,
+      });
+    }
   };
 
   // Setup modal
@@ -198,6 +216,7 @@ function CustomerLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Head />
       <Navbar
         cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
         onCartClick={() => navigate('/cart')}
@@ -310,11 +329,11 @@ function CheckoutPageRoute() {
 
 function DoctorsListingPageRoute() {
   const navigate = useNavigate();
-  return <DoctorsListingPage onBookAppointment={(doctorId?: string) => {
-    if (doctorId) {
-      navigate(`/doctor/${doctorId}`);
+  return <DoctorsListingPage onBookAppointment={(doctor?: any) => {
+    if (doctor?.id) {
+      navigate(`/appointment-booking/${doctor.id}`);
     } else {
-      navigate('/doctor-profile');
+      navigate('/appointment-booking');
     }
   }} />;
 }
@@ -345,6 +364,7 @@ export function AppRouter() {
           <Route path="doctor/:id" element={<ProtectedRoute><DoctorProfilePageRoute /></ProtectedRoute>} />
           <Route path="doctor-profile" element={<ProtectedRoute><DoctorProfilePageRoute /></ProtectedRoute>} />
           <Route path="appointment-booking" element={<ProtectedRoute><AppointmentBookingPage /></ProtectedRoute>} />
+          <Route path="appointment-booking/:doctorId" element={<ProtectedRoute><AppointmentBookingPage /></ProtectedRoute>} />
           <Route path="about-us" element={<AboutUsPage />} />
           <Route path="contact-us" element={<ContactUsPage />} />
         </Route>
@@ -357,6 +377,7 @@ export function AppRouter() {
           <Route path="categories" element={<AdminCategoryManagement />} />
           <Route path="orders" element={<AdminOrderManagement />} />
           <Route path="users" element={<AdminUserManagement />} />
+          <Route path="doctors" element={<AdminDoctorManagement />} />
           <Route path="appointments" element={<AdminAppointmentManagement />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="settings" element={<AdminSettings />} />

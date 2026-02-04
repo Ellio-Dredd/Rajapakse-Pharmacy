@@ -64,6 +64,15 @@ export function ProductCard({
     }
     
     onAddToCart?.();
+    
+    // Show success notification
+    toast.success(`${name} added to cart!`, {
+      description: 'View your cart to proceed to checkout',
+      action: {
+        label: 'View Cart',
+        onClick: () => navigate('/cart'),
+      },
+    });
   };
 
   return (

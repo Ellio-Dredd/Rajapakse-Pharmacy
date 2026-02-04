@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, Clock, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -7,14 +7,21 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { appointmentsAPI } from '../utils/api';
+import { appointmentsAPI, doctorsAPI } from '../utils/api';
 import { toast } from 'sonner';
+import { formatCurrency } from '../utils/currency';
+import { useParams } from 'react-router';
 
 interface AppointmentBookingPageProps {
-  doctorName?: string;
+  doctorId?: string;
 }
 
-export function AppointmentBookingPage({ doctorName = 'Dr. Michael Chen' }: AppointmentBookingPageProps) {
+export function AppointmentBookingPage({ doctorId: propDoctorId }: AppointmentBookingPageProps) {
+  const { doctorId: urlDoctorId } = useParams<{ doctorId: string }>();
+  const doctorId = propDoctorId || urlDoctorId;
+  
+  const [doctor, setDoctor] = useState<any>(null);
+  const [loadingDoctor, setLoadingDoctor] = useState(true);
   const [date, setDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -28,6 +35,27 @@ export function AppointmentBookingPage({ doctorName = 'Dr. Michael Chen' }: Appo
     reason: '',
     notes: '',
   });
+
+  useEffect(() => {
+    if (doctorId) {
+      fetchDoctor();
+    } else {
+      setLoadingDoctor(false);
+    }
+  }, [doctorId]);
+
+  const fetchDoctor = async () => {
+    try {
+      setLoadingDoctor(true);
+      const response = await doctorsAPI.getById(doctorId!);
+      setDoctor(response.data);
+    } catch (error) {
+      console.error('Error fetching doctor:', error);
+      toast.error('Failed to load doctor information');
+    } finally {
+      setLoadingDoctor(false);
+    }
+  };
 
   const timeSlots = [
     '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM',
@@ -54,7 +82,7 @@ export function AppointmentBookingPage({ doctorName = 'Dr. Michael Chen' }: Appo
 
       const appointmentData = {
         user_id: 'demo-user-id', // Replace with actual user ID when auth is implemented
-        doctor_id: 'demo-doctor-id', // Replace with actual doctor ID
+        doctor_id: doctorId || 'demo-doctor-id',
         appointment_date: date.toISOString().split('T')[0],
         appointment_time: selectedTime,
         status: 'pending',
@@ -71,6 +99,18 @@ export function AppointmentBookingPage({ doctorName = 'Dr. Michael Chen' }: Appo
       setLoading(false);
     }
   };
+
+  const doctorName = doctor?.name || 'Dr. Michael Chen';
+  const doctorSpecialization = doctor?.specialization || 'Cardiologist';
+  const consultationFee = doctor?.consultation_fee || 2500;
+
+  if (loadingDoctor) {
+    return (
+      <div className="py-16 text-center">
+        <p>Loading doctor information...</p>
+      </div>
+    );
+  }
 
   if (isSubmitted) {
     return (
@@ -240,7 +280,7 @@ export function AppointmentBookingPage({ doctorName = 'Dr. Michael Chen' }: Appo
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Doctor</p>
                   <p className="font-medium">{doctorName}</p>
-                  <p className="text-sm text-muted-foreground">Cardiologist</p>
+                  <p className="text-sm text-muted-foreground">{doctorSpecialization}</p>
                 </div>
 
                 {date && (
@@ -262,7 +302,7 @@ export function AppointmentBookingPage({ doctorName = 'Dr. Michael Chen' }: Appo
                 <div className="pt-4 border-t">
                   <div className="flex justify-between mb-2">
                     <span className="text-sm text-muted-foreground">Consultation Fee</span>
-                    <span className="font-medium">$150.00</span>
+                    <span className="font-medium">{formatCurrency(consultationFee)}</span>
                   </div>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm text-muted-foreground">Booking Fee</span>
@@ -270,7 +310,7 @@ export function AppointmentBookingPage({ doctorName = 'Dr. Michael Chen' }: Appo
                   </div>
                   <div className="flex justify-between pt-2 border-t">
                     <span className="font-semibold">Total</span>
-                    <span className="font-semibold text-lg text-primary">$160.00</span>
+                    <span className="font-semibold text-lg text-primary">{formatCurrency(consultationFee + 1000)}</span>
                   </div>
                 </div>
 

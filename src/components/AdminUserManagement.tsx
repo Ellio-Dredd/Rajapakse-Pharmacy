@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, MoreHorizontal, UserCheck, UserX } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, MoreHorizontal, UserCheck, UserX, Shield, ShieldOff } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -10,61 +10,95 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { usersAPI } from '../utils/api';
+import { toast } from 'sonner';
 
 export function AdminUserManagement() {
-  const users = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      role: 'Customer',
-      status: 'Active',
-      joined: 'Jan 15, 2026',
-      orders: 12,
-      avatar: 'https://images.unsplash.com/photo-1575654402720-0af3480d1fad?w=100',
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane.smith@example.com',
-      role: 'Customer',
-      status: 'Active',
-      joined: 'Jan 20, 2026',
-      orders: 8,
-      avatar: 'https://images.unsplash.com/photo-1632054224477-c9cb3aae1b7e?w=100',
-    },
-    {
-      id: 3,
-      name: 'Bob Johnson',
-      email: 'bob.johnson@example.com',
-      role: 'Customer',
-      status: 'Inactive',
-      joined: 'Dec 10, 2025',
-      orders: 3,
-      avatar: 'https://images.unsplash.com/photo-1575654402720-0af3480d1fad?w=100',
-    },
-    {
-      id: 4,
-      name: 'Alice Brown',
-      email: 'alice.brown@example.com',
-      role: 'Customer',
-      status: 'Active',
-      joined: 'Jan 28, 2026',
-      orders: 15,
-      avatar: 'https://images.unsplash.com/photo-1632054224477-c9cb3aae1b7e?w=100',
-    },
-    {
-      id: 5,
-      name: 'Charlie Davis',
-      email: 'charlie.davis@example.com',
-      role: 'Customer',
-      status: 'Active',
-      joined: 'Feb 1, 2026',
-      orders: 1,
-      avatar: 'https://images.unsplash.com/photo-1575654402720-0af3480d1fad?w=100',
-    },
-  ];
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [newRole, setNewRole] = useState('');
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await usersAPI.getAll();
+      setUsers(response.data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
+      // Fallback to demo data
+      setUsers([
+        {
+          id: 1,
+          name: 'John Doe',
+          email: 'john.doe@example.com',
+          role: 'customer',
+          status: 'Active',
+          created_at: 'Jan 15, 2026',
+          orders: 12,
+        },
+        {
+          id: 2,
+          name: 'Jane Smith',
+          email: 'jane.smith@example.com',
+          role: 'customer',
+          status: 'Active',
+          created_at: 'Jan 20, 2026',
+          orders: 8,
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateRole = async () => {
+    if (!selectedUser || !newRole) return;
+
+    try {
+      await usersAPI.updateRole(selectedUser.id, newRole);
+      toast.success('User role updated successfully');
+      setIsRoleDialogOpen(false);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      toast.error('Failed to update user role');
+    }
+  };
+
+  const openRoleDialog = (user: any) => {
+    setSelectedUser(user);
+    setNewRole(user.role || 'customer');
+    setIsRoleDialogOpen(true);
+  };
+
+  const filteredUsers = users.filter((user) =>
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -122,7 +156,7 @@ export function AdminUserManagement() {
             <CardTitle>All Users</CardTitle>
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input type="text" placeholder="Search users..." className="pl-9" />
+              <Input type="text" placeholder="Search users..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
         </CardHeader>
@@ -140,7 +174,7 @@ export function AdminUserManagement() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={user.id} className="border-b last:border-0 hover:bg-muted/50">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
@@ -194,6 +228,36 @@ export function AdminUserManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Role Update Dialog */}
+      <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update User Role</DialogTitle>
+            <DialogDescription>
+              Select a new role for {selectedUser?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={newRole} onValueChange={setNewRole}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="customer">Customer</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="moderator">Moderator</SelectItem>
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsRoleDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleUpdateRole}>
+              Update Role
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

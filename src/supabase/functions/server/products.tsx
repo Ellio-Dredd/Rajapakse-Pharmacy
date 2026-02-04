@@ -103,24 +103,39 @@ products.get('/:id', async (c) => {
 products.post('/', async (c) => {
   try {
     const body = await c.req.json();
-    const { name, category, category_id, price, stock, description, image, requires_prescription } = body;
+    const { name, category, category_id, price, stock, description, image_url, sku, requires_prescription } = body;
     
-    if (!name || (!category && !category_id) || price === undefined || stock === undefined) {
-      return errorResponse('Missing required fields: name, category or category_id, price, stock', 400);
+    if (!name || price === undefined || stock === undefined) {
+      return errorResponse('Missing required fields: name, price, stock', 400);
+    }
+    
+    // Build the insert object dynamically
+    const insertData: any = {
+      name,
+      price,
+      stock,
+      description: description || null,
+      image: image_url || null,
+      sku: sku || null,
+      requires_prescription: requires_prescription || false,
+    };
+    
+    // Add category_id if provided
+    if (category_id) {
+      insertData.category_id = category_id;
+    }
+    
+    // Add legacy category field if provided (for backwards compatibility)
+    if (category) {
+      insertData.category = category;
+    } else if (!category_id) {
+      // If neither category nor category_id is provided, use a default
+      insertData.category = 'Uncategorized';
     }
     
     const { data, error } = await supabase
       .from('products')
-      .insert([{
-        name,
-        category: category || null,
-        category_id: category_id || null,
-        price,
-        stock,
-        description,
-        image,
-        requires_prescription: requires_prescription || false,
-      }])
+      .insert([insertData])
       .select()
       .single();
     
@@ -141,10 +156,34 @@ products.put('/:id', async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json();
+    const { name, category, category_id, price, stock, description, image_url, sku, requires_prescription } = body;
+    
+    // Build the update object dynamically
+    const updateData: any = {};
+    
+    if (name !== undefined) updateData.name = name;
+    if (price !== undefined) updateData.price = price;
+    if (stock !== undefined) updateData.stock = stock;
+    if (description !== undefined) updateData.description = description;
+    if (image_url !== undefined) updateData.image = image_url;
+    if (sku !== undefined) updateData.sku = sku;
+    if (requires_prescription !== undefined) updateData.requires_prescription = requires_prescription;
+    
+    // Handle category fields
+    if (category_id !== undefined) {
+      updateData.category_id = category_id;
+    }
+    
+    if (category !== undefined) {
+      updateData.category = category;
+    } else if (category_id && !category) {
+      // If category_id is provided but category is not, set a default
+      updateData.category = 'General';
+    }
     
     const { data, error } = await supabase
       .from('products')
-      .update(body)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

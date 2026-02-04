@@ -149,6 +149,36 @@ users.put('/:id', async (c) => {
   }
 });
 
+// Update user role
+users.patch('/:id/role', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const { role } = body;
+    
+    if (!role) {
+      return errorResponse('Missing required field: role', 400);
+    }
+    
+    const { data, error } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating user role:', error);
+      return errorResponse(error.message);
+    }
+    
+    return successResponse(data);
+  } catch (error) {
+    console.error('Exception in PATCH /users/:id/role:', error);
+    return errorResponse('Failed to update user role');
+  }
+});
+
 // Delete user
 users.delete('/:id', async (c) => {
   try {

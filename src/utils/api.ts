@@ -104,6 +104,12 @@ export const doctorsAPI = {
       body: JSON.stringify(doctor),
     });
   },
+  
+  delete: async (id: string) => {
+    return apiCall(`/doctors/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // ==================== APPOINTMENTS API ====================
@@ -132,6 +138,13 @@ export const appointmentsAPI = {
   },
   
   cancel: async (id: string) => {
+    return apiCall(`/appointments/${id}/cancel`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'cancelled' }),
+    });
+  },
+  
+  delete: async (id: string) => {
     return apiCall(`/appointments/${id}`, {
       method: 'DELETE',
     });
@@ -175,6 +188,13 @@ export const usersAPI = {
     return apiCall(`/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(user),
+    });
+  },
+  
+  updateRole: async (id: string, role: string) => {
+    return apiCall(`/users/${id}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
     });
   },
 };

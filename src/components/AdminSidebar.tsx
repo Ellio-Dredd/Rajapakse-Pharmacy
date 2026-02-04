@@ -1,4 +1,4 @@
-import { Home, Package, ShoppingBag, Users, Calendar, FileText, BarChart3, Settings, LogOut, Tag, Menu, X } from 'lucide-react';
+import { Home, Package, ShoppingBag, Users, Calendar, FileText, BarChart3, Settings, LogOut, Tag, Menu, X, Stethoscope } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import logo from 'figma:asset/12f4788d231eeed58be516923f29125d458246af.png';
 import { useState } from 'react';
@@ -18,6 +18,7 @@ export function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
     { id: 'categories', label: 'Categories', icon: Tag },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'users', label: 'Users', icon: Users },
+    { id: 'doctors', label: 'Doctors', icon: Stethoscope },
     { id: 'appointments', label: 'Appointments', icon: Calendar },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },

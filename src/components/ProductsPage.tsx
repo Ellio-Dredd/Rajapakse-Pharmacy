@@ -6,7 +6,7 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { ProductCard } from './ProductCard';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { productsAPI } from '../utils/api';
+import { productsAPI, categoriesAPI } from '../utils/api';
 import { toast } from 'sonner';
 
 interface ProductsPageProps {
@@ -16,8 +16,14 @@ interface ProductsPageProps {
 export function ProductsPage({ onAddToCart }: ProductsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 9; // 3x3 grid
 
   // Fetch products from API on mount
   useEffect(() => {
@@ -26,6 +32,7 @@ export function ProductsPage({ onAddToCart }: ProductsPageProps) {
         setLoading(true);
         const response = await productsAPI.getAll();
         setProducts(response.data || []);
+        setTotalPages(Math.ceil(response.data.length / itemsPerPage));
       } catch (error) {
         console.error('Error fetching products:', error);
         toast.error('Failed to load products. Please try again.');
@@ -52,6 +59,7 @@ export function ProductsPage({ onAddToCart }: ProductsPageProps) {
             category: 'devices',
           },
         ]);
+        setTotalPages(Math.ceil(2 / itemsPerPage));
       } finally {
         setLoading(false);
       }
@@ -60,12 +68,21 @@ export function ProductsPage({ onAddToCart }: ProductsPageProps) {
     fetchProducts();
   }, []);
 
-  const categories = [
-    { id: 'medicines', label: 'Medicines' },
-    { id: 'devices', label: 'Medical Devices' },
-    { id: 'wellness', label: 'Wellness' },
-    { id: 'personal-care', label: 'Personal Care' },
-  ];
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await categoriesAPI.getAll();
+        setCategories(response.data || []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        // Fallback to extracting from products if API fails
+        setCategories([]);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const brands = [
     'PharmaCare',
@@ -73,6 +90,50 @@ export function ProductsPage({ onAddToCart }: ProductsPageProps) {
     'MediTech',
     'WellnessLab',
   ];
+
+  // Dynamically extract unique brands from products
+  const availableBrands = Array.from(
+    new Set(products.map(p => p.brand).filter(Boolean))
+  );
+
+  // Calculate filtered products
+  const filteredProducts = products
+    .filter(product => {
+      if (selectedCategories.length === 0) return true;
+      // Handle category as object or string
+      const categoryId = typeof product.category === 'object' && product.category !== null
+        ? String(product.category.id)
+        : String(product.category);
+      return selectedCategories.includes(categoryId);
+    })
+    .filter(product =>
+      searchQuery === '' || 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .filter(product => {
+      if (selectedPriceRanges.length === 0) return true;
+      if (selectedPriceRanges.includes('price-1') && product.price < 500) return true;
+      if (selectedPriceRanges.includes('price-2') && product.price >= 500 && product.price < 2000) return true;
+      if (selectedPriceRanges.includes('price-3') && product.price >= 2000 && product.price < 5000) return true;
+      if (selectedPriceRanges.includes('price-4') && product.price >= 5000) return true;
+      return false;
+    })
+    .filter(product => {
+      if (selectedBrands.length === 0) return true;
+      return product.brand && selectedBrands.includes(product.brand);
+    });
+
+  // Update total pages when filters change
+  useEffect(() => {
+    setTotalPages(Math.ceil(filteredProducts.length / itemsPerPage));
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [selectedCategories, searchQuery, products.length, selectedPriceRanges, selectedBrands]);
+
+  // Get paginated products
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="py-8">
@@ -87,10 +148,31 @@ export function ProductsPage({ onAddToCart }: ProductsPageProps) {
           <div className="lg:col-span-1">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <SlidersHorizontal className="h-5 w-5" />
-                  Filters
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-5 w-5" />
+                    Filters
+                    {(selectedCategories.length + selectedPriceRanges.length + selectedBrands.length) > 0 && (
+                      <span className="ml-1 px-2 py-0.5 text-xs bg-primary text-white rounded-full">
+                        {selectedCategories.length + selectedPriceRanges.length + selectedBrands.length}
+                      </span>
+                    )}
+                  </CardTitle>
+                  {(selectedCategories.length + selectedPriceRanges.length + selectedBrands.length) > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCategories([]);
+                        setSelectedPriceRanges([]);
+                        setSelectedBrands([]);
+                      }}
+                      className="text-xs"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Category Filter */}
@@ -111,7 +193,7 @@ export function ProductsPage({ onAddToCart }: ProductsPageProps) {
                           }}
                         />
                         <Label htmlFor={category.id} className="text-sm cursor-pointer">
-                          {category.label}
+                          {category.name}
                         </Label>
                       </div>
                     ))}
@@ -123,20 +205,60 @@ export function ProductsPage({ onAddToCart }: ProductsPageProps) {
                   <h4 className="mb-3">Price Range</h4>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="price-1" />
-                      <Label htmlFor="price-1" className="text-sm cursor-pointer">Under $10</Label>
+                      <Checkbox
+                        id="price-1"
+                        checked={selectedPriceRanges.includes('price-1')}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedPriceRanges([...selectedPriceRanges, 'price-1']);
+                          } else {
+                            setSelectedPriceRanges(selectedPriceRanges.filter(c => c !== 'price-1'));
+                          }
+                        }}
+                      />
+                      <Label htmlFor="price-1" className="text-sm cursor-pointer">Under LKR 500</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="price-2" />
-                      <Label htmlFor="price-2" className="text-sm cursor-pointer">$10 - $25</Label>
+                      <Checkbox
+                        id="price-2"
+                        checked={selectedPriceRanges.includes('price-2')}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedPriceRanges([...selectedPriceRanges, 'price-2']);
+                          } else {
+                            setSelectedPriceRanges(selectedPriceRanges.filter(c => c !== 'price-2'));
+                          }
+                        }}
+                      />
+                      <Label htmlFor="price-2" className="text-sm cursor-pointer">LKR 500 - 2,000</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="price-3" />
-                      <Label htmlFor="price-3" className="text-sm cursor-pointer">$25 - $50</Label>
+                      <Checkbox
+                        id="price-3"
+                        checked={selectedPriceRanges.includes('price-3')}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedPriceRanges([...selectedPriceRanges, 'price-3']);
+                          } else {
+                            setSelectedPriceRanges(selectedPriceRanges.filter(c => c !== 'price-3'));
+                          }
+                        }}
+                      />
+                      <Label htmlFor="price-3" className="text-sm cursor-pointer">LKR 2,000 - 5,000</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="price-4" />
-                      <Label htmlFor="price-4" className="text-sm cursor-pointer">$50+</Label>
+                      <Checkbox
+                        id="price-4"
+                        checked={selectedPriceRanges.includes('price-4')}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedPriceRanges([...selectedPriceRanges, 'price-4']);
+                          } else {
+                            setSelectedPriceRanges(selectedPriceRanges.filter(c => c !== 'price-4'));
+                          }
+                        }}
+                      />
+                      <Label htmlFor="price-4" className="text-sm cursor-pointer">LKR 5,000+</Label>
                     </div>
                   </div>
                 </div>
@@ -145,9 +267,19 @@ export function ProductsPage({ onAddToCart }: ProductsPageProps) {
                 <div>
                   <h4 className="mb-3">Brand</h4>
                   <div className="space-y-2">
-                    {brands.map((brand) => (
+                    {availableBrands.map((brand) => (
                       <div key={brand} className="flex items-center space-x-2">
-                        <Checkbox id={brand} />
+                        <Checkbox
+                          id={brand}
+                          checked={selectedBrands.includes(brand)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedBrands([...selectedBrands, brand]);
+                            } else {
+                              setSelectedBrands(selectedBrands.filter(c => c !== brand));
+                            }
+                          }}
+                        />
                         <Label htmlFor={brand} className="text-sm cursor-pointer">{brand}</Label>
                       </div>
                     ))}
@@ -174,7 +306,7 @@ export function ProductsPage({ onAddToCart }: ProductsPageProps) {
             </div>
 
             {/* Products Grid */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
               {loading ? (
                 // Loading skeleton
                 Array.from({ length: 6 }).map((_, i) => (
@@ -184,35 +316,100 @@ export function ProductsPage({ onAddToCart }: ProductsPageProps) {
                     <div className="bg-gray-200 h-4 rounded w-2/3"></div>
                   </div>
                 ))
+              ) : paginatedProducts.length === 0 ? (
+                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                  <p className="text-muted-foreground text-lg mb-2">No products found</p>
+                  <p className="text-sm text-muted-foreground">Try adjusting your filters or search query</p>
+                </div>
               ) : (
-                products
-                  .filter(product => 
-                    selectedCategories.length === 0 || selectedCategories.includes(product.category)
-                  )
-                  .filter(product =>
-                    searchQuery === '' || 
-                    product.name.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      {...product}
-                      image={product.image_url || product.image}
-                      requiresPrescription={product.requires_prescription}
-                      onAddToCart={() => onAddToCart?.(product)}
-                    />
-                  ))
+                paginatedProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    {...product}
+                    image={product.image_url || product.image}
+                    requiresPrescription={product.requires_prescription}
+                    onAddToCart={() => onAddToCart?.(product)}
+                  />
+                ))
               )}
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-center gap-2 mt-8">
-              <Button variant="outline" size="sm">Previous</Button>
-              <Button variant="outline" size="sm">1</Button>
-              <Button size="sm">2</Button>
-              <Button variant="outline" size="sm">3</Button>
-              <Button variant="outline" size="sm">Next</Button>
-            </div>
+            {!loading && filteredProducts.length > 0 && (
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                
+                {/* Show first page */}
+                {totalPages > 0 && (
+                  <Button
+                    size="sm"
+                    variant={currentPage === 1 ? 'default' : 'outline'}
+                    onClick={() => setCurrentPage(1)}
+                  >
+                    1
+                  </Button>
+                )}
+                
+                {/* Show ellipsis if needed */}
+                {currentPage > 3 && totalPages > 5 && (
+                  <span className="px-2 text-muted-foreground">...</span>
+                )}
+                
+                {/* Show middle pages */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => {
+                    if (totalPages <= 5) return page > 1 && page < totalPages;
+                    return page > 1 && page < totalPages && Math.abs(page - currentPage) <= 1;
+                  })
+                  .map(page => (
+                    <Button
+                      key={page}
+                      size="sm"
+                      variant={currentPage === page ? 'default' : 'outline'}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                
+                {/* Show ellipsis if needed */}
+                {currentPage < totalPages - 2 && totalPages > 5 && (
+                  <span className="px-2 text-muted-foreground">...</span>
+                )}
+                
+                {/* Show last page */}
+                {totalPages > 1 && (
+                  <Button
+                    size="sm"
+                    variant={currentPage === totalPages ? 'default' : 'outline'}
+                    onClick={() => setCurrentPage(totalPages)}
+                  >
+                    {totalPages}
+                  </Button>
+                )}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+                
+                {/* Page info */}
+                <span className="text-sm text-muted-foreground ml-2">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredProducts.length)} of {filteredProducts.length}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

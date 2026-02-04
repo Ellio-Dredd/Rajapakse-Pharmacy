@@ -45,7 +45,15 @@ export function ProductDetailPage({ onAddToCart }: ProductDetailPageProps) {
       for (let i = 0; i < quantity; i++) {
         onAddToCart?.(product);
       }
-      toast.success(`Added ${quantity} ${quantity > 1 ? 'items' : 'item'} to cart`);
+      
+      // Show success notification
+      toast.success(`${product.name} added to cart!`, {
+        description: `Added ${quantity} ${quantity > 1 ? 'items' : 'item'} to your cart`,
+        action: {
+          label: 'View Cart',
+          onClick: () => navigate('/cart'),
+        },
+      });
     }
   };
 
