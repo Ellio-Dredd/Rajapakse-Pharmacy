@@ -135,10 +135,6 @@ export function AdminCategoryManagement() {
           <p className="text-muted-foreground">Manage product categories</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSeedCategories}>
-            <Tag className="h-4 w-4 mr-2" />
-            Seed Categories
-          </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();

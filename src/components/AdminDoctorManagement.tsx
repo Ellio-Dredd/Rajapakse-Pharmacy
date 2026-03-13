@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Stethoscope, MoreHorizontal } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Edit2, Trash2, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { PhoneInput } from './ui/phone-input';
+import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
+import { Checkbox } from './ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import {
@@ -27,10 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Label } from './ui/label';
-import { Checkbox } from './ui/checkbox';
-import { doctorsAPI } from '../utils/api';
 import { toast } from 'sonner';
+import { doctorsAPI } from '../utils/api';
 import { formatCurrency } from '../utils/currency';
 
 const SPECIALIZATIONS = [
@@ -127,11 +128,11 @@ function DoctorForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="phone">Phone Number</Label>
-          <Input
+          <PhoneInput
             id="phone"
             placeholder="0771234567"
             value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, phone: value })}
           />
         </div>
       </div>
@@ -404,7 +405,7 @@ export function AdminDoctorManagement() {
                 <p className="text-2xl font-semibold">{doctors.length}</p>
               </div>
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Stethoscope className="h-6 w-6 text-primary" />
+                <CheckCircle2 className="h-6 w-6 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -454,7 +455,7 @@ export function AdminDoctorManagement() {
                               />
                             ) : (
                               <div className="h-full w-full flex items-center justify-center bg-primary/10">
-                                <Stethoscope className="h-5 w-5 text-primary" />
+                                <CheckCircle2 className="h-5 w-5 text-primary" />
                               </div>
                             )}
                           </div>
@@ -487,7 +488,7 @@ export function AdminDoctorManagement() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => openEditDialog(doctor)}>
-                                <Edit className="h-4 w-4 mr-2" />
+                                <Edit2 className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem

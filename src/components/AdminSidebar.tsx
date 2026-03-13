@@ -13,15 +13,15 @@ export function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
+    // { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'products', label: 'Products', icon: Package },
     { id: 'categories', label: 'Categories', icon: Tag },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'doctors', label: 'Doctors', icon: Stethoscope },
     { id: 'appointments', label: 'Appointments', icon: Calendar },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    // { id: 'reports', label: 'Reports', icon: BarChart3 },
+    // { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   const SidebarContent = () => (

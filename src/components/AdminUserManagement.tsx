@@ -36,6 +36,13 @@ export function AdminUserManagement() {
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newRole, setNewRole] = useState('');
+  
+  // Calculate stats from users data
+  const stats = {
+    total: users.length,
+    active: users.filter(u => u.status === 'active').length,
+    inactive: users.filter(u => u.status === 'inactive').length,
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -45,31 +52,12 @@ export function AdminUserManagement() {
     try {
       setLoading(true);
       const response = await usersAPI.getAll();
+      console.log('Fetched users from database:', response.data);
       setUsers(response.data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
-      // Fallback to demo data
-      setUsers([
-        {
-          id: 1,
-          name: 'John Doe',
-          email: 'john.doe@example.com',
-          role: 'customer',
-          status: 'Active',
-          created_at: 'Jan 15, 2026',
-          orders: 12,
-        },
-        {
-          id: 2,
-          name: 'Jane Smith',
-          email: 'jane.smith@example.com',
-          role: 'customer',
-          status: 'Active',
-          created_at: 'Jan 20, 2026',
-          orders: 8,
-        },
-      ]);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -114,7 +102,7 @@ export function AdminUserManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Total Users</p>
-                <p className="text-2xl font-semibold">8,456</p>
+                <p className="text-2xl font-semibold">{stats.total}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
                 <UserCheck className="h-6 w-6 text-primary" />
@@ -127,7 +115,7 @@ export function AdminUserManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Active Users</p>
-                <p className="text-2xl font-semibold">7,892</p>
+                <p className="text-2xl font-semibold">{stats.active}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-success/10 flex items-center justify-center">
                 <UserCheck className="h-6 w-6 text-success" />
@@ -140,7 +128,7 @@ export function AdminUserManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Inactive Users</p>
-                <p className="text-2xl font-semibold">564</p>
+                <p className="text-2xl font-semibold">{stats.inactive}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
                 <UserX className="h-6 w-6 text-muted-foreground" />

@@ -11,6 +11,7 @@ appointments.get('/', async (c) => {
     const patientId = c.req.query('patientId');
     const date = c.req.query('date');
     
+    // Select all fields from appointments table
     let query = supabase.from('appointments').select('*');
     
     if (status) {
@@ -36,7 +37,37 @@ appointments.get('/', async (c) => {
       return errorResponse(error.message);
     }
     
-    return successResponse(data);
+    // Transform the data to include properly formatted fields for the frontend
+    const transformedData = await Promise.all(data.map(async (appointment: any) => {
+      // Try to fetch doctor details if doctor_id exists
+      let doctorSpecialty = 'N/A';
+      let doctorImage = null;
+      
+      if (appointment.doctor_id) {
+        const { data: doctorData } = await supabase
+          .from('doctors')
+          .select('specialty, image')
+          .eq('id', appointment.doctor_id)
+          .single();
+        
+        if (doctorData) {
+          doctorSpecialty = doctorData.specialty || 'N/A';
+          doctorImage = doctorData.image;
+        }
+      }
+      
+      return {
+        ...appointment,
+        patient: appointment.patient_name,
+        patientEmail: appointment.patient_email,
+        doctor: appointment.doctor_name,
+        doctorSpecialty: doctorSpecialty,
+        doctorImage: doctorImage,
+        type: appointment.appointment_type || 'In-person',
+      };
+    }));
+    
+    return successResponse(transformedData);
   } catch (error) {
     console.error('Exception in GET /appointments:', error);
     return errorResponse('Failed to fetch appointments');
@@ -70,6 +101,8 @@ appointments.get('/:id', async (c) => {
 appointments.post('/', async (c) => {
   try {
     const body = await c.req.json();
+    console.log('Received appointment creation request with body:', JSON.stringify(body, null, 2));
+    
     const {
       patient_id,
       patient_name,
@@ -84,7 +117,19 @@ appointments.post('/', async (c) => {
     } = body;
     
     if (!patient_name || !patient_email || !doctor_id || !appointment_date || !appointment_time) {
+      console.error('Missing required fields:', { patient_name, patient_email, doctor_id, appointment_date, appointment_time });
       return errorResponse('Missing required fields', 400);
+    }
+    
+    // Validate UUIDs if provided
+    if (patient_id && typeof patient_id === 'string' && patient_id !== '' && !patient_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      console.error('Invalid patient_id UUID format:', patient_id);
+      return errorResponse('Invalid patient ID format', 400);
+    }
+    
+    if (!doctor_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      console.error('Invalid doctor_id UUID format:', doctor_id);
+      return errorResponse('Invalid doctor ID format', 400);
     }
     
     // Check if the time slot is available
@@ -109,22 +154,31 @@ appointments.post('/', async (c) => {
     // Generate appointment number
     const appointmentNumber = `APT-${Date.now()}`;
     
+    // Only include patient_id if it's a valid UUID
+    const insertData: any = {
+      appointment_number: appointmentNumber,
+      patient_name,
+      patient_email,
+      patient_phone,
+      doctor_id,
+      doctor_name,
+      appointment_date,
+      appointment_time,
+      symptoms,
+      notes,
+      status: 'pending',
+    };
+    
+    // Only add patient_id if it exists and is valid
+    if (patient_id && patient_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      insertData.patient_id = patient_id;
+    }
+    
+    console.log('Inserting appointment with data:', JSON.stringify(insertData, null, 2));
+    
     const { data, error } = await supabase
       .from('appointments')
-      .insert([{
-        appointment_number: appointmentNumber,
-        patient_id,
-        patient_name,
-        patient_email,
-        patient_phone,
-        doctor_id,
-        doctor_name,
-        appointment_date,
-        appointment_time,
-        symptoms,
-        notes,
-        status: 'pending',
-      }])
+      .insert([insertData])
       .select()
       .single();
     
