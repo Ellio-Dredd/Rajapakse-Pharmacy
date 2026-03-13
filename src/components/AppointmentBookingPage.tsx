@@ -7,10 +7,12 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { PhoneInput } from './ui/phone-input';
 import { appointmentsAPI, doctorsAPI } from '../utils/api';
 import { toast } from 'sonner';
 import { formatCurrency } from '../utils/currency';
 import { useParams } from 'react-router';
+import { supabase } from '../utils/supabase/client';
 
 interface AppointmentBookingPageProps {
   doctorId?: string;
@@ -80,21 +82,55 @@ export function AppointmentBookingPage({ doctorId: propDoctorId }: AppointmentBo
         return;
       }
 
-      const appointmentData = {
-        user_id: 'demo-user-id', // Replace with actual user ID when auth is implemented
-        doctor_id: doctorId || 'demo-doctor-id',
-        appointment_date: date.toISOString().split('T')[0],
-        appointment_time: selectedTime,
-        status: 'pending',
-        notes: formData.notes || `Patient: ${formData.firstName} ${formData.lastName}, Reason: ${formData.reason}`,
+      // Validate doctor ID
+      if (!doctorId) {
+        toast.error('Please select a doctor first');
+        return;
+      }
+
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id || null;
+
+      // Convert time from "09:00 AM" format to "09:00:00" format (24-hour)
+      const convertTo24Hour = (time12h: string) => {
+        const [time, modifier] = time12h.split(' ');
+        let [hours, minutes] = time.split(':');
+        
+        if (hours === '12') {
+          hours = modifier === 'AM' ? '00' : '12';
+        } else {
+          hours = modifier === 'PM' ? String(parseInt(hours, 10) + 12) : hours;
+        }
+        
+        return `${hours.padStart(2, '0')}:${minutes}:00`;
       };
 
+      const appointmentData = {
+        patient_id: userId,
+        patient_name: `${formData.firstName} ${formData.lastName}`.trim(),
+        patient_email: formData.email,
+        patient_phone: formData.phone || null,
+        doctor_id: doctorId,
+        doctor_name: doctorName,
+        appointment_date: date.toISOString().split('T')[0],
+        appointment_time: convertTo24Hour(selectedTime),
+        symptoms: formData.reason || null,
+        notes: formData.notes || null,
+      };
+
+      console.log('Creating appointment with data:', appointmentData);
+
       const response = await appointmentsAPI.create(appointmentData);
+      
+      console.log('Appointment created successfully:', response);
+      
       toast.success('Appointment booked successfully!');
       setIsSubmitted(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error booking appointment:', error);
-      toast.error('Failed to book appointment. Please try again.');
+      const errorMessage = error?.message || 'Failed to book appointment. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -179,7 +215,10 @@ export function AppointmentBookingPage({ doctorId: propDoctorId }: AppointmentBo
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" placeholder="+1 (555) 000-0000" onChange={handleInputChange} />
+                    <PhoneInput 
+                      value={formData.phone}
+                      onChange={(value) => setFormData({ ...formData, phone: value })}
+                    />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -247,9 +286,9 @@ export function AppointmentBookingPage({ doctorId: propDoctorId }: AppointmentBo
 
                 {/* Symptoms/Reason */}
                 <div className="space-y-2">
-                  <Label htmlFor="symptoms">Reason for Visit / Symptoms</Label>
+                  <Label htmlFor="reason">Reason for Visit / Symptoms</Label>
                   <Textarea
-                    id="symptoms"
+                    id="reason"
                     placeholder="Please describe your symptoms or reason for consultation"
                     rows={4}
                     onChange={handleInputChange}
@@ -306,7 +345,7 @@ export function AppointmentBookingPage({ doctorId: propDoctorId }: AppointmentBo
                   </div>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm text-muted-foreground">Booking Fee</span>
-                    <span className="font-medium">$10.00</span>
+                    <span className="font-medium">Rs. 1,000.00</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t">
                     <span className="font-semibold">Total</span>

@@ -1,20 +1,31 @@
-import { useState } from 'react';
-import { CreditCard, Building2, Wallet, Lock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { ShoppingBag, CreditCard, MapPin, CheckCircle2, Upload, X, Lock } from 'lucide-react';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { PhoneInput } from './ui/phone-input';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { Separator } from './ui/separator';
-import { ordersAPI } from '../utils/api';
-import { toast } from 'sonner';
 import { formatCurrency } from '../utils/currency';
+import { toast } from 'sonner';
+import { ordersAPI } from '../utils/api';
+import { supabase } from '../utils/supabase/client';
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+}
 
 interface CheckoutPageProps {
+  cartItems?: CartItem[];
   onPlaceOrder?: () => void;
 }
 
-export function CheckoutPage({ onPlaceOrder }: CheckoutPageProps) {
+export function CheckoutPage({ cartItems, onPlaceOrder }: CheckoutPageProps) {
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -29,10 +40,10 @@ export function CheckoutPage({ onPlaceOrder }: CheckoutPageProps) {
   });
 
   const orderSummary = {
-    subtotal: 99.95,
+    subtotal: cartItems ? cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0) : 0,
     shipping: 5.99,
     tax: 7.99,
-    total: 113.93,
+    total: cartItems ? cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0) + 5.99 + 7.99 : 0,
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,22 +63,52 @@ export function CheckoutPage({ onPlaceOrder }: CheckoutPageProps) {
         return;
       }
 
-      const shippingAddress = `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`;
+      // Validate cart
+      if (!cartItems || cartItems.length === 0) {
+        toast.error('Your cart is empty');
+        return;
+      }
+
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id || null;
+
+      const shippingAddress = `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`.trim();
+      const customerName = `${formData.firstName} ${formData.lastName}`.trim();
       
+      // Format items for the order
+      const items = cartItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image || '',
+      }));
+
       const orderData = {
-        user_id: 'demo-user-id', // Replace with actual user ID when auth is implemented
-        total_amount: orderSummary.total,
-        status: 'pending',
-        payment_method: paymentMethod,
+        customer_id: userId,
+        customer_name: customerName,
+        customer_email: formData.email,
+        items: items,
         shipping_address: shippingAddress,
+        total: orderSummary.total,
       };
 
+      console.log('Creating order with data:', orderData);
+
       const response = await ordersAPI.create(orderData);
+      
+      console.log('Order created successfully:', response);
+      
+      // Clear cart from localStorage
+      localStorage.removeItem('rajapakse_cart');
+      
       toast.success('Order placed successfully!');
       onPlaceOrder?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error placing order:', error);
-      toast.error('Failed to place order. Please try again.');
+      const errorMessage = error?.message || 'Failed to place order. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -119,12 +160,9 @@ export function CheckoutPage({ onPlaceOrder }: CheckoutPageProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input 
-                    id="phone" 
-                    type="tel" 
-                    placeholder="+1 (555) 000-0000" 
+                  <PhoneInput 
                     value={formData.phone}
-                    onChange={handleInputChange}
+                    onChange={(value) => setFormData({ ...formData, phone: value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -182,20 +220,6 @@ export function CheckoutPage({ onPlaceOrder }: CheckoutPageProps) {
                       <span>Credit / Debit Card</span>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50">
-                    <RadioGroupItem value="paypal" id="paypal" />
-                    <Label htmlFor="paypal" className="flex items-center gap-2 flex-1 cursor-pointer">
-                      <Wallet className="h-5 w-5 text-primary" />
-                      <span>PayPal</span>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50">
-                    <RadioGroupItem value="bank" id="bank" />
-                    <Label htmlFor="bank" className="flex items-center gap-2 flex-1 cursor-pointer">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      <span>Bank Transfer</span>
-                    </Label>
-                  </div>
                 </RadioGroup>
 
                 {paymentMethod === 'card' && (
@@ -240,7 +264,6 @@ export function CheckoutPage({ onPlaceOrder }: CheckoutPageProps) {
                     <span className="text-muted-foreground">Tax</span>
                     <span>{formatCurrency(orderSummary.tax)}</span>
                   </div>
-                  <Separator />
                   <div className="flex justify-between">
                     <span className="font-semibold">Total</span>
                     <span className="font-semibold text-lg text-primary">

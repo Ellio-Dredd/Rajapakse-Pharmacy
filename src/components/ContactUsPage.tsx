@@ -1,11 +1,12 @@
+import { useState } from 'react';
 import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
+import { PhoneInput } from './ui/phone-input';
 import { Label } from './ui/label';
-import { useState } from 'react';
-import { toast } from 'sonner@2.0.3';
+import { Textarea } from './ui/textarea';
+import { toast } from 'sonner';
 
 export function ContactUsPage() {
   const [formData, setFormData] = useState({
@@ -146,13 +147,9 @@ export function ContactUsPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        placeholder="0712345678"
+                      <PhoneInput
                         value={formData.phone}
-                        onChange={handleChange}
+                        onChange={(value) => setFormData({ ...formData, phone: value })}
                       />
                     </div>
 

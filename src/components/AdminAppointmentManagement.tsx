@@ -24,6 +24,16 @@ import { toast } from 'sonner';
 export function AdminAppointmentManagement() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Calculate stats from appointments data
+  const today = new Date().toISOString().split('T')[0];
+  const stats = {
+    totalToday: appointments.filter(a => a.appointment_date === today).length,
+    confirmed: appointments.filter(a => a.status === 'confirmed').length,
+    pending: appointments.filter(a => a.status === 'pending').length,
+    completed: appointments.filter(a => a.status === 'completed').length,
+  };
 
   useEffect(() => {
     fetchAppointments();
@@ -32,36 +42,23 @@ export function AdminAppointmentManagement() {
   const fetchAppointments = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await appointmentsAPI.getAll();
-      setAppointments(response.data || []);
-    } catch (error) {
+      console.log('Fetched appointments from database:', response);
+      
+      if (response.success && response.data) {
+        setAppointments(response.data);
+        console.log('Loaded appointments:', response.data.length);
+      } else {
+        console.error('Invalid response format:', response);
+        setError('Invalid response format from server');
+        setAppointments([]);
+      }
+    } catch (error: any) {
       console.error('Error fetching appointments:', error);
-      toast.error('Failed to load appointments');
-      // Fallback to demo data
-      setAppointments([
-        {
-          id: 1,
-          patient: 'John Doe',
-          patientEmail: 'john.doe@example.com',
-          doctor: 'Dr. Michael Chen',
-          doctorSpecialty: 'Cardiologist',
-          appointment_date: 'Feb 3, 2026',
-          appointment_time: '09:00 AM',
-          status: 'Confirmed',
-          type: 'In-person',
-        },
-        {
-          id: 2,
-          patient: 'Jane Smith',
-          patientEmail: 'jane.smith@example.com',
-          doctor: 'Dr. Sarah Williams',
-          doctorSpecialty: 'Pediatrician',
-          appointment_date: 'Feb 3, 2026',
-          appointment_time: '10:30 AM',
-          status: 'Pending',
-          type: 'Video Call',
-        },
-      ]);
+      setError(error.message || 'Failed to load appointments');
+      toast.error('Failed to load appointments: ' + (error.message || 'Unknown error'));
+      setAppointments([]);
     } finally {
       setLoading(false);
     }
@@ -137,7 +134,7 @@ export function AdminAppointmentManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Total Today</p>
-                <p className="text-2xl font-semibold">24</p>
+                <p className="text-2xl font-semibold">{stats.totalToday}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Calendar className="h-6 w-6 text-primary" />
@@ -150,7 +147,7 @@ export function AdminAppointmentManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Confirmed</p>
-                <p className="text-2xl font-semibold">18</p>
+                <p className="text-2xl font-semibold">{stats.confirmed}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-success/10 flex items-center justify-center">
                 <Calendar className="h-6 w-6 text-success" />
@@ -163,7 +160,7 @@ export function AdminAppointmentManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Pending</p>
-                <p className="text-2xl font-semibold">4</p>
+                <p className="text-2xl font-semibold">{stats.pending}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-warning/10 flex items-center justify-center">
                 <Calendar className="h-6 w-6 text-warning" />
@@ -176,7 +173,7 @@ export function AdminAppointmentManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Completed</p>
-                <p className="text-2xl font-semibold">156</p>
+                <p className="text-2xl font-semibold">{stats.completed}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
                 <Calendar className="h-6 w-6 text-muted-foreground" />
@@ -212,71 +209,97 @@ export function AdminAppointmentManagement() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Patient</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Doctor</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date & Time</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Type</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {appointments.map((appointment) => (
-                  <tr key={appointment.id} className="border-b last:border-0 hover:bg-muted/50">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback>
-                            {appointment.patient ? appointment.patient.split(' ').map((n: string) => n[0]).join('') : 'NA'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{appointment.patient || 'N/A'}</div>
-                          <div className="text-sm text-muted-foreground">{appointment.patientEmail || 'N/A'}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div>
-                        <div className="font-medium">{appointment.doctor}</div>
-                        <div className="text-sm text-muted-foreground">{appointment.doctorSpecialty}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div>
-                        <div className="font-medium">{appointment.appointment_date}</div>
-                        <div className="text-sm text-muted-foreground">{appointment.appointment_time}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline">{appointment.type}</Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge className={getStatusColor(appointment.status)}>{appointment.status}</Badge>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Reschedule</DropdownMenuItem>
-                          <DropdownMenuItem>Send Reminder</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleCancelAppointment(appointment.id)}>Cancel</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteAppointment(appointment.id)}>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading appointments...</p>
+                </div>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <p className="text-destructive mb-2">Error: {error}</p>
+                  <Button onClick={fetchAppointments} variant="outline" size="sm">
+                    Retry
+                  </Button>
+                </div>
+              </div>
+            ) : appointments.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No appointments found in database</p>
+                  <p className="text-sm text-muted-foreground mt-2">Appointments will appear here once patients book them</p>
+                </div>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Patient</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Doctor</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date & Time</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Type</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {appointments.map((appointment) => (
+                    <tr key={appointment.id} className="border-b last:border-0 hover:bg-muted/50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback>
+                              {appointment.patient ? appointment.patient.split(' ').map((n: string) => n[0]).join('') : 'NA'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{appointment.patient || 'N/A'}</div>
+                            <div className="text-sm text-muted-foreground">{appointment.patientEmail || 'N/A'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div>
+                          <div className="font-medium">{appointment.doctor || 'N/A'}</div>
+                          <div className="text-sm text-muted-foreground">{appointment.doctorSpecialty || 'N/A'}</div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div>
+                          <div className="font-medium">{appointment.appointment_date || 'N/A'}</div>
+                          <div className="text-sm text-muted-foreground">{appointment.appointment_time || 'N/A'}</div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant="outline">{appointment.type || 'N/A'}</Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge className={getStatusColor(appointment.status)}>{appointment.status || 'N/A'}</Badge>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                            <DropdownMenuItem>Reschedule</DropdownMenuItem>
+                            <DropdownMenuItem>Send Reminder</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleCancelAppointment(appointment.id)}>Cancel</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteAppointment(appointment.id)}>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </CardContent>
       </Card>

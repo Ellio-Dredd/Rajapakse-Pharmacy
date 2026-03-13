@@ -239,15 +239,6 @@ function CustomerLayout() {
       )}
       
       {/* Setup Button */}
-      <Button
-        className="fixed bottom-6 right-24 rounded-full h-14 w-14 shadow-lg z-50"
-        size="icon"
-        variant="outline"
-        onClick={() => setShowSetup(true)}
-        title="Database Setup"
-      >
-        <Settings className="h-6 w-6" />
-      </Button>
       
       <Toaster />
     </div>
@@ -324,7 +315,8 @@ function CartPageRoute() {
 
 function CheckoutPageRoute() {
   const navigate = useNavigate();
-  return <CheckoutPage onPlaceOrder={() => navigate('/')} />;
+  const { cartItems } = useOutletContext<CustomerContextType>();
+  return <CheckoutPage cartItems={cartItems} onPlaceOrder={() => navigate('/')} />;
 }
 
 function DoctorsListingPageRoute() {

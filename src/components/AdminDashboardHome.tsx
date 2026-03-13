@@ -1,3 +1,47 @@
+import { LayoutDashboard } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { useNavigate } from 'react-router';
+
+// Temporary Dashboard Component - Full dashboard will be enabled later
+export function AdminDashboardHome() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+      <Card className="max-w-md w-full">
+        <CardHeader className="text-center">
+          <div className="h-16 w-16 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center">
+            <LayoutDashboard className="h-8 w-8 text-primary" />
+          </div>
+          <CardTitle className="text-2xl">Admin Dashboard</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          {/* <p className="text-muted-foreground">
+            The dashboard analytics and charts are temporarily disabled. They will be enabled later.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            You can still access all other admin functions from the sidebar.
+          </p> */}
+          <Button
+            onClick={() => navigate('/')}
+            variant="outline"
+            className="w-full"
+          >
+            Exit Admin Mode
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* 
+===========================================
+ORIGINAL DASHBOARD CODE - COMMENTED OUT
+Will be enabled later
+===========================================
+
 import { Package, ShoppingCart, Users, Calendar, TrendingUp, TrendingDown, MoreHorizontal, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -48,170 +92,204 @@ export function AdminDashboardHome() {
   }, []);
 
   // Use mock data if API fails or is loading
-  const salesData = analyticsData?.salesData || [
-    { month: 'Jan', sales: 12000, orders: 145 },
-    { month: 'Feb', sales: 19000, orders: 220 },
-    { month: 'Mar', sales: 15000, orders: 180 },
-    { month: 'Apr', sales: 25000, orders: 290 },
-    { month: 'May', sales: 22000, orders: 260 },
-    { month: 'Jun', sales: 30000, orders: 350 },
+  const mockStats = [
+    {
+      title: 'Total Revenue',
+      value: formatCurrency(125430),
+      change: '+12.5%',
+      changeType: 'positive' as const,
+      icon: DollarSign,
+    },
+    {
+      title: 'Total Orders',
+      value: '1,234',
+      change: '+8.2%',
+      changeType: 'positive' as const,
+      icon: ShoppingCart,
+    },
+    {
+      title: 'Total Products',
+      value: '456',
+      change: '+3.1%',
+      changeType: 'positive' as const,
+      icon: Package,
+    },
+    {
+      title: 'Total Users',
+      value: '2,345',
+      change: '+15.3%',
+      changeType: 'positive' as const,
+      icon: Users,
+    },
   ];
 
-  const appointmentData = analyticsData?.appointmentData || [
-    { day: 'Mon', appointments: 12 },
-    { day: 'Tue', appointments: 19 },
-    { day: 'Wed', appointments: 15 },
-    { day: 'Thu', appointments: 22 },
-    { day: 'Fri', appointments: 18 },
-    { day: 'Sat', appointments: 10 },
-    { day: 'Sun', appointments: 8 },
+  const mockRecentOrders = [
+    {
+      id: 'ORD-001',
+      customer: 'John Doe',
+      total: 25000,
+      status: 'completed',
+      date: '2024-03-10',
+    },
+    {
+      id: 'ORD-002',
+      customer: 'Jane Smith',
+      total: 18500,
+      status: 'processing',
+      date: '2024-03-10',
+    },
+    {
+      id: 'ORD-003',
+      customer: 'Bob Johnson',
+      total: 32000,
+      status: 'pending',
+      date: '2024-03-09',
+    },
   ];
 
-  const recentOrders = analyticsData?.recentOrders || [
-    { id: '#ORD-1234', customer: 'John Doe', amount: 89.99, status: 'Completed', date: 'Feb 2, 2026' },
-    { id: '#ORD-1235', customer: 'Jane Smith', amount: 156.50, status: 'Processing', date: 'Feb 2, 2026' },
-    { id: '#ORD-1236', customer: 'Bob Johnson', amount: 45.00, status: 'Shipped', date: 'Feb 1, 2026' },
-    { id: '#ORD-1237', customer: 'Alice Brown', amount: 210.75, status: 'Completed', date: 'Feb 1, 2026' },
+  const mockSalesData = [
+    { month: 'Jan', revenue: 45000, orders: 120 },
+    { month: 'Feb', revenue: 52000, orders: 145 },
+    { month: 'Mar', revenue: 48000, orders: 132 },
+    { month: 'Apr', revenue: 61000, orders: 168 },
+    { month: 'May', revenue: 55000, orders: 155 },
+    { month: 'Jun', revenue: 67000, orders: 189 },
   ];
 
-  const stats = analyticsData?.stats || {
-    totalSales: '$123,456',
-    totalOrders: '1,234',
-    totalUsers: '8,456',
-    appointments: '456',
-  };
+  const stats = analyticsData?.stats || mockStats;
+  const recentOrders = analyticsData?.recentOrders || mockRecentOrders;
+  const salesData = analyticsData?.salesData || mockSalesData;
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat: any, index: number) => (
+          <StatCard key={index} {...stat} />
+        ))}
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Sales"
-          value={stats.totalSales}
-          change="+12.5% from last month"
-          icon={DollarSign}
-          trend="up"
-        />
-        <StatCard
-          title="Total Orders"
-          value={stats.totalOrders}
-          change="+8.2% from last month"
-          icon={ShoppingCart}
-          trend="up"
-        />
-        <StatCard
-          title="Total Users"
-          value={stats.totalUsers}
-          change="+3.1% from last month"
-          icon={Users}
-          trend="up"
-        />
-        <StatCard
-          title="Appointments"
-          value={stats.appointments}
-          change="-2.4% from last month"
-          icon={Calendar}
-          trend="down"
-        />
-      </div>
-
-      {/* Charts */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Sales Chart */}
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Sales Overview</CardTitle>
+            <CardTitle>Revenue Overview</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="month" stroke="#64748b" />
-                <YAxis stroke="#64748b" />
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
                 <Tooltip />
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey="sales"
-                  stroke="#0891b2"
+                  dataKey="revenue"
+                  stroke="#0891B2"
                   strokeWidth={2}
-                  dot={{ fill: '#0891b2', r: 4 }}
-                  name="Sales ($)"
+                  name="Revenue (LKR)"
                 />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Appointments Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Weekly Appointments</CardTitle>
+            <CardTitle>Orders Overview</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={appointmentData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="day" stroke="#64748b" />
-                <YAxis stroke="#64748b" />
+              <BarChart data={salesData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="appointments" fill="#0891b2" radius={[8, 8, 0, 0]} name="Appointments" />
+                <Bar dataKey="orders" fill="#0891B2" name="Orders" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Orders */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Orders</CardTitle>
+          <Button variant="ghost" size="sm">
+            View All
+          </Button>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Order ID</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Customer</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Amount</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentOrders.map((order) => (
-                  <tr key={order.id} className="border-b last:border-0 hover:bg-muted/50">
-                    <td className="py-3 px-4 font-medium">{order.id}</td>
-                    <td className="py-3 px-4">{order.customer}</td>
-                    <td className="py-3 px-4">{formatCurrency(order.amount)}</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          order.status === 'Completed'
-                            ? 'bg-success/10 text-success'
-                            : order.status === 'Processing'
-                            ? 'bg-warning/10 text-warning'
-                            : 'bg-info/10 text-info'
-                        }`}
-                      >
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground">{order.date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-4">
+            {recentOrders.map((order: any) => (
+              <div
+                key={order.id}
+                className="flex items-center justify-between p-4 border rounded-lg"
+              >
+                <div className="flex items-center gap-4">
+                  <ShoppingCart className="h-8 w-8 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{order.id}</p>
+                    <p className="text-sm text-muted-foreground">{order.customer}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="font-medium">{formatCurrency(order.total)}</p>
+                    <p className="text-sm text-muted-foreground">{order.date}</p>
+                  </div>
+                  <Badge
+                    variant={
+                      order.status === 'completed'
+                        ? 'default'
+                        : order.status === 'processing'
+                        ? 'secondary'
+                        : 'outline'
+                    }
+                  >
+                    {order.status}
+                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>View Details</DropdownMenuItem>
+                      <DropdownMenuItem>Update Status</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">
+                        Cancel Order
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+END OF COMMENTED CODE
+===========================================
+*/
