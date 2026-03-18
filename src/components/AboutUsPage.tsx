@@ -1,6 +1,5 @@
 import { Heart, Award, Users, Shield, Clock, MapPin } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
-import pharmacyStoreFront from 'figma:asset/13abff12ca0cab12663001b93a21dfd664badda0.png';
 
 export function AboutUsPage() {
   const values = [
@@ -169,7 +168,7 @@ export function AboutUsPage() {
                   </div>
                   <div className="relative h-64 md:h-auto rounded-lg overflow-hidden bg-muted">
                     <img
-                      src={pharmacyStoreFront}
+                      src="https://images.unsplash.com/photo-1681418290255-a5355089dc6d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaGFybWFjeSUyMGludGVyaW9yJTIwc2hlbHZlcyUyMG1lZGljaW5lc3xlbnwxfHx8fDE3NzM4NTc0OTN8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
                       alt="Pharmacy Store Front"
                       className="w-full h-full object-cover"
                     />
