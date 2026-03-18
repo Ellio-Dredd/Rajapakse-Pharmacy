@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, MoreHorizontal, UserCheck, UserX, Shield, ShieldOff } from 'lucide-react';
+import { Search, MoreHorizontal, UserCheck, UserX, Shield, ShieldOff, Trash2, RefreshCw, Package } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -8,6 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import {
@@ -25,6 +26,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { usersAPI } from '../utils/api';
 import { toast } from 'sonner';
@@ -34,8 +45,11 @@ export function AdminUserManagement() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newRole, setNewRole] = useState('');
+  const [actionType, setActionType] = useState<'deactivate' | 'activate' | 'delete'>('deactivate');
   
   // Calculate stats from users data
   const stats = {
@@ -81,6 +95,17 @@ export function AdminUserManagement() {
     setSelectedUser(user);
     setNewRole(user.role || 'customer');
     setIsRoleDialogOpen(true);
+  };
+
+  const openDeleteDialog = (user: any, type: 'deactivate' | 'activate' | 'delete') => {
+    setSelectedUser(user);
+    setActionType(type);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const openProfileDialog = (user: any) => {
+    setSelectedUser(user);
+    setIsProfileDialogOpen(true);
   };
 
   const filteredUsers = users.filter((user) =>
@@ -182,16 +207,18 @@ export function AdminUserManagement() {
                     <td className="py-3 px-4">
                       <Badge
                         className={
-                          user.status === 'Active'
-                            ? 'bg-success/10 text-success'
+                          user.status === 'active'
+                            ? 'bg-success/10 text-success border-success/20'
                             : 'bg-muted text-muted-foreground'
                         }
                       >
-                        {user.status}
+                        {user.status === 'active' ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4">{user.orders}</td>
-                    <td className="py-3 px-4 text-muted-foreground">{user.joined}</td>
+                    <td className="py-3 px-4">{user.orders || 0}</td>
+                    <td className="py-3 px-4 text-muted-foreground">
+                      {user.created_at ? new Date(user.created_at).toLocaleDateString() : user.joined || '-'}
+                    </td>
                     <td className="py-3 px-4 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -200,12 +227,34 @@ export function AdminUserManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Profile</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openProfileDialog(user)}>View Profile</DropdownMenuItem>
                           <DropdownMenuItem>View Orders</DropdownMenuItem>
-                          <DropdownMenuItem>
-                            {user.status === 'Active' ? 'Deactivate' : 'Activate'}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() =>
+                              openDeleteDialog(user, user.status === 'active' ? 'deactivate' : 'activate')
+                            }
+                          >
+                            {user.status === 'active' ? (
+                              <>
+                                <UserX className="h-4 w-4 mr-2" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Activate
+                              </>
+                            )}
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Delete User</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => openDeleteDialog(user, 'delete')}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete User
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -242,6 +291,111 @@ export function AdminUserManagement() {
             </Button>
             <Button type="button" onClick={handleUpdateRole}>
               Update Role
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete/Deactivate/Activate Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === 'delete'
+                ? 'Are you sure you want to delete this user?'
+                : actionType === 'deactivate'
+                ? 'Deactivate User Account'
+                : 'Activate User Account'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === 'delete' ? (
+                <>
+                  This action cannot be undone. This will permanently delete{' '}
+                  <strong>{selectedUser?.name}'s</strong> account and remove all their data from the system.
+                </>
+              ) : actionType === 'deactivate' ? (
+                <>
+                  This will mark <strong>{selectedUser?.name}</strong> as inactive. They won't be able to access their account until reactivated.
+                </>
+              ) : (
+                <>
+                  This will reactivate <strong>{selectedUser?.name}'s</strong> account and restore their access to the platform.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={actionType === 'delete' ? 'bg-destructive hover:bg-destructive/90' : ''}
+              onClick={async () => {
+                if (!selectedUser) return;
+
+                try {
+                  if (actionType === 'delete') {
+                    await usersAPI.delete(selectedUser.id);
+                    toast.success('User deleted successfully');
+                  } else if (actionType === 'deactivate') {
+                    await usersAPI.deactivate(selectedUser.id);
+                    toast.success('User deactivated successfully');
+                  } else {
+                    await usersAPI.activate(selectedUser.id);
+                    toast.success('User activated successfully');
+                  }
+                  setIsDeleteDialogOpen(false);
+                  fetchUsers();
+                } catch (error) {
+                  console.error(`Error ${actionType}ing user:`, error);
+                  toast.error(`Failed to ${actionType} user`);
+                }
+              }}
+            >
+              {actionType === 'delete' ? 'Delete' : actionType === 'deactivate' ? 'Deactivate' : 'Activate'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Profile Dialog */}
+      <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>User Profile</DialogTitle>
+            <DialogDescription>
+              View details of {selectedUser?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarImage src={selectedUser?.avatar} alt={selectedUser?.name} />
+                <AvatarFallback>{selectedUser?.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="font-medium">{selectedUser?.name}</div>
+                <div className="text-sm text-muted-foreground">{selectedUser?.email}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Shield className="h-4 w-4 text-muted-foreground" />
+              <div className="font-medium">Role: {selectedUser?.role}</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+              <div className="font-medium">Status: {selectedUser?.status}</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <ShieldOff className="h-4 w-4 text-muted-foreground" />
+              <div className="font-medium">Orders: {selectedUser?.orders || 0}</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              <div className="font-medium">Joined: {selectedUser?.created_at ? new Date(selectedUser?.created_at).toLocaleDateString() : selectedUser?.joined || '-'}</div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsProfileDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

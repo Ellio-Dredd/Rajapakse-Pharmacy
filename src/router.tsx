@@ -5,6 +5,7 @@ import { AdminOrderManagement } from './components/AdminOrderManagement';
 import { AdminUserManagement } from './components/AdminUserManagement';
 import { AdminDoctorManagement } from './components/AdminDoctorManagement';
 import { AdminAppointmentManagement } from './components/AdminAppointmentManagement';
+import { AdminPrescriptionManagement } from './components/AdminPrescriptionManagement';
 import { AdminReports } from './components/AdminReports';
 import { AdminSettings } from './components/AdminSettings';
 import { SeedDatabaseButton } from './components/SeedDatabaseButton';
@@ -371,6 +372,7 @@ export function AppRouter() {
           <Route path="users" element={<AdminUserManagement />} />
           <Route path="doctors" element={<AdminDoctorManagement />} />
           <Route path="appointments" element={<AdminAppointmentManagement />} />
+          <Route path="prescriptions" element={<AdminPrescriptionManagement />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>

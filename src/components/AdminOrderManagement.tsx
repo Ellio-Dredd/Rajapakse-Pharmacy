@@ -38,10 +38,17 @@ export function AdminOrderManagement() {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [orderToUpdate, setOrderToUpdate] = useState<any>(null);
   const [newStatus, setNewStatus] = useState('');
+  const [selectedOrderStatus, setSelectedOrderStatus] = useState('');
 
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  useEffect(() => {
+    if (selectedOrder) {
+      setSelectedOrderStatus(selectedOrder.status.toLowerCase());
+    }
+  }, [selectedOrder]);
 
   const fetchOrders = async () => {
     try {
@@ -166,21 +173,23 @@ export function AdminOrderManagement() {
                   )
                   .map((order) => (
                     <tr key={order.id} className="border-b last:border-0 hover:bg-muted/50">
-                      <td className="py-3 px-4 font-medium">{order.id}</td>
+                      <td className="py-3 px-4 font-medium">{order.order_number || order.id}</td>
                       <td className="py-3 px-4">
                         <div>
-                          <div className="font-medium">{order.customer}</div>
-                          <div className="text-sm text-muted-foreground">{order.email}</div>
+                          <div className="font-medium">{order.customer_name || order.customer || 'N/A'}</div>
+                          <div className="text-sm text-muted-foreground">{order.customer_email || order.email || 'N/A'}</div>
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        {Array.isArray(order.items) ? order.items.length : order.items}
+                        {Array.isArray(order.items) ? order.items.length : order.items || 0}
                       </td>
-                      <td className="py-3 px-4 font-medium">{formatCurrency(order.total_amount)}</td>
+                      <td className="py-3 px-4 font-medium">{formatCurrency(order.total_amount || order.total || 0)}</td>
                       <td className="py-3 px-4">
                         <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground">{order.created_at}</td>
+                      <td className="py-3 px-4 text-muted-foreground">
+                        {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                      </td>
                       <td className="py-3 px-4 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -212,28 +221,30 @@ export function AdminOrderManagement() {
 
       {/* Order Details Sheet */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="w-full sm:max-w-lg overflow-y-auto">
+        <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           {selectedOrder && (
             <>
               <DialogHeader>
                 <DialogTitle>Order Details</DialogTitle>
-                <DialogDescription>{selectedOrder.id}</DialogDescription>
+                <DialogDescription>{selectedOrder.order_number || selectedOrder.id}</DialogDescription>
               </DialogHeader>
               <div className="mt-6 space-y-6">
                 <div>
-                  <h4 className="mb-3">Customer Information</h4>
+                  <h4 className="font-semibold mb-3">Customer Information</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Name:</span>
-                      <span className="font-medium">{selectedOrder.customer}</span>
+                      <span className="font-medium">{selectedOrder.customer_name || selectedOrder.customer || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Email:</span>
-                      <span className="font-medium">{selectedOrder.email}</span>
+                      <span className="font-medium">{selectedOrder.customer_email || selectedOrder.email || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Order Date:</span>
-                      <span className="font-medium">{selectedOrder.created_at}</span>
+                      <span className="font-medium">
+                        {selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleDateString() : 'N/A'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -241,14 +252,14 @@ export function AdminOrderManagement() {
                 <Separator />
 
                 <div>
-                  <h4 className="mb-3">Shipping Address</h4>
+                  <h4 className="font-semibold mb-3">Shipping Address</h4>
                   <p className="text-sm text-muted-foreground">{selectedOrder.shipping_address}</p>
                 </div>
 
                 <Separator />
 
                 <div>
-                  <h4 className="mb-3">Order Items</h4>
+                  <h4 className="font-semibold mb-3">Order Items</h4>
                   <div className="space-y-3">
                     {(selectedOrder.products || selectedOrder.items || []).map((product: any, index: number) => (
                       <div key={index} className="flex justify-between text-sm">
@@ -265,23 +276,24 @@ export function AdminOrderManagement() {
                 <Separator />
 
                 <div>
-                  <div className="flex justify-between mb-2">
+                  <h4 className="font-semibold mb-3">Order Summary</h4>
+                  <div className="flex justify-between mb-2 text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">{formatCurrency(selectedOrder.total_amount)}</span>
+                    <span className="font-medium">{formatCurrency(selectedOrder.subtotal || selectedOrder.total_amount || 0)}</span>
                   </div>
-                  <div className="flex justify-between mb-2">
+                  <div className="flex justify-between mb-2 text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span className="font-medium">$5.99</span>
+                    <span className="font-medium">{formatCurrency(selectedOrder.shipping_cost || 599)}</span>
                   </div>
-                  <div className="flex justify-between mb-2">
+                  <div className="flex justify-between mb-2 text-sm">
                     <span className="text-muted-foreground">Tax</span>
-                    <span className="font-medium">$7.99</span>
+                    <span className="font-medium">{formatCurrency(selectedOrder.tax || 0)}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between">
                     <span className="font-semibold">Total</span>
                     <span className="font-semibold text-lg text-primary">
-                      {formatCurrency(selectedOrder.total_amount + 5.99 + 7.99)}
+                      {formatCurrency(selectedOrder.total_amount || selectedOrder.total || 0)}
                     </span>
                   </div>
                 </div>
@@ -289,8 +301,8 @@ export function AdminOrderManagement() {
                 <Separator />
 
                 <div>
-                  <h4 className="mb-3">Order Status</h4>
-                  <Select defaultValue={selectedOrder.status.toLowerCase()}>
+                  <h4 className="font-semibold mb-3">Order Status</h4>
+                  <Select value={selectedOrderStatus} onValueChange={setSelectedOrderStatus}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -301,7 +313,15 @@ export function AdminOrderManagement() {
                       <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button className="w-full mt-3" onClick={() => handleUpdateStatus(selectedOrder.id, selectedOrder.status.toLowerCase())}>Update Status</Button>
+                  <Button 
+                    className="w-full mt-3" 
+                    onClick={async () => {
+                      await handleUpdateStatus(selectedOrder.id, selectedOrderStatus);
+                      setSelectedOrder(null);
+                    }}
+                  >
+                    Update Status
+                  </Button>
                 </div>
               </div>
             </>
@@ -311,28 +331,30 @@ export function AdminOrderManagement() {
 
       {/* Update Status Dialog */}
       <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
-        <DialogContent className="w-full sm:max-w-lg overflow-y-auto">
+        <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           {orderToUpdate && (
             <>
               <DialogHeader>
                 <DialogTitle>Update Order Status</DialogTitle>
-                <DialogDescription>{orderToUpdate.id}</DialogDescription>
+                <DialogDescription>{orderToUpdate.order_number || orderToUpdate.id}</DialogDescription>
               </DialogHeader>
               <div className="mt-6 space-y-6">
                 <div>
-                  <h4 className="mb-3">Customer Information</h4>
+                  <h4 className="font-semibold mb-3">Customer Information</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Name:</span>
-                      <span className="font-medium">{orderToUpdate.customer}</span>
+                      <span className="font-medium">{orderToUpdate.customer_name || orderToUpdate.customer || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Email:</span>
-                      <span className="font-medium">{orderToUpdate.email}</span>
+                      <span className="font-medium">{orderToUpdate.customer_email || orderToUpdate.email || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Order Date:</span>
-                      <span className="font-medium">{orderToUpdate.created_at}</span>
+                      <span className="font-medium">
+                        {orderToUpdate.created_at ? new Date(orderToUpdate.created_at).toLocaleDateString() : 'N/A'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -340,14 +362,14 @@ export function AdminOrderManagement() {
                 <Separator />
 
                 <div>
-                  <h4 className="mb-3">Shipping Address</h4>
+                  <h4 className="font-semibold mb-3">Shipping Address</h4>
                   <p className="text-sm text-muted-foreground">{orderToUpdate.shipping_address}</p>
                 </div>
 
                 <Separator />
 
                 <div>
-                  <h4 className="mb-3">Order Items</h4>
+                  <h4 className="font-semibold mb-3">Order Items</h4>
                   <div className="space-y-3">
                     {(orderToUpdate.products || orderToUpdate.items || []).map((product: any, index: number) => (
                       <div key={index} className="flex justify-between text-sm">
@@ -364,23 +386,24 @@ export function AdminOrderManagement() {
                 <Separator />
 
                 <div>
-                  <div className="flex justify-between mb-2">
+                  <h4 className="font-semibold mb-3">Order Summary</h4>
+                  <div className="flex justify-between mb-2 text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">{formatCurrency(orderToUpdate.total_amount)}</span>
+                    <span className="font-medium">{formatCurrency(orderToUpdate.subtotal || orderToUpdate.total_amount || 0)}</span>
                   </div>
-                  <div className="flex justify-between mb-2">
+                  <div className="flex justify-between mb-2 text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span className="font-medium">$5.99</span>
+                    <span className="font-medium">{formatCurrency(orderToUpdate.shipping_cost || 599)}</span>
                   </div>
-                  <div className="flex justify-between mb-2">
+                  <div className="flex justify-between mb-2 text-sm">
                     <span className="text-muted-foreground">Tax</span>
-                    <span className="font-medium">$7.99</span>
+                    <span className="font-medium">{formatCurrency(orderToUpdate.tax || 0)}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between">
                     <span className="font-semibold">Total</span>
                     <span className="font-semibold text-lg text-primary">
-                      {formatCurrency(orderToUpdate.total_amount + 5.99 + 7.99)}
+                      {formatCurrency(orderToUpdate.total_amount || orderToUpdate.total || 0)}
                     </span>
                   </div>
                 </div>
@@ -388,7 +411,7 @@ export function AdminOrderManagement() {
                 <Separator />
 
                 <div>
-                  <h4 className="mb-3">Order Status</h4>
+                  <h4 className="font-semibold mb-3">Order Status</h4>
                   <Select defaultValue={newStatus} onValueChange={setNewStatus}>
                     <SelectTrigger>
                       <SelectValue />
@@ -400,7 +423,15 @@ export function AdminOrderManagement() {
                       <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button className="w-full mt-3" onClick={() => handleUpdateStatus(orderToUpdate.id, newStatus)}>Update Status</Button>
+                  <Button 
+                    className="w-full mt-3" 
+                    onClick={() => {
+                      handleUpdateStatus(orderToUpdate.id, newStatus);
+                      setIsStatusDialogOpen(false);
+                    }}
+                  >
+                    Update Status
+                  </Button>
                 </div>
               </div>
             </>

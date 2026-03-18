@@ -274,4 +274,29 @@ appointments.delete('/:id', async (c) => {
   }
 });
 
+// Permanently delete appointment
+appointments.delete('/:id/permanent', async (c) => {
+  try {
+    const id = c.req.param('id');
+    
+    // Hard delete - permanently remove from database
+    const { data, error } = await supabase
+      .from('appointments')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error deleting appointment:', error);
+      return errorResponse(error.message);
+    }
+    
+    return successResponse(data);
+  } catch (error) {
+    console.error('Exception in DELETE /appointments/:id/permanent:', error);
+    return errorResponse('Failed to delete appointment');
+  }
+});
+
 export default appointments;

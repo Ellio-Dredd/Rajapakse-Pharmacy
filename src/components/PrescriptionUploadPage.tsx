@@ -4,12 +4,25 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { PhoneInput } from './ui/phone-input';
 import { Textarea } from './ui/textarea';
+import { prescriptionsAPI } from '../utils/api';
+import { toast } from 'sonner';
+import { supabase } from '../utils/supabase/client';
 
 export function PrescriptionUploadPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    patientName: '',
+    patientAge: '',
+    patientPhone: '',
+    patientEmail: '',
+    address: '',
+    notes: '',
+  });
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -29,8 +42,80 @@ export function PrescriptionUploadPage() {
     setFiles(files.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
-    setIsSubmitted(true);
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    try {
+      // Validate required fields
+      if (!formData.patientName || !formData.patientEmail || files.length === 0) {
+        toast.error('Please fill in all required fields and upload at least one file');
+        setIsLoading(false);
+        return;
+      }
+
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id || null;
+
+      // Convert files to base64 for storage
+      const fileDataPromises = files.map(async (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64String = reader.result as string;
+            resolve({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              content: base64String, // Base64 encoded file content
+            });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      });
+
+      const fileData = await Promise.all(fileDataPromises);
+
+      const prescriptionData = {
+        patient_id: userId,
+        patient_name: formData.patientName,
+        patient_email: formData.patientEmail,
+        patient_phone: formData.patientPhone || null,
+        patient_age: formData.patientAge ? parseInt(formData.patientAge) : null,
+        address: formData.address || null,
+        notes: formData.notes || null,
+        files: fileData,
+      };
+
+      console.log('Submitting prescription with files:', {
+        ...prescriptionData,
+        files: fileData.map(f => ({ name: f.name, size: f.size, type: f.type, hasContent: !!f.content }))
+      });
+
+      const response = await prescriptionsAPI.submit(prescriptionData);
+
+      console.log('Prescription submitted successfully:', response);
+
+      toast.success('Prescription submitted successfully!');
+      setIsSubmitted(true);
+      
+      // Reset form
+      setFormData({
+        patientName: '',
+        patientAge: '',
+        patientPhone: '',
+        patientEmail: '',
+        address: '',
+        notes: '',
+      });
+      setFiles([]);
+    } catch (error: any) {
+      console.error('Error submitting prescription:', error);
+      const errorMessage = error?.message || 'Failed to submit prescription. Please try again.';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isSubmitted) {
@@ -144,21 +229,41 @@ export function PrescriptionUploadPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="patientName">Full Name</Label>
-                    <Input id="patientName" placeholder="John Doe" />
+                    <Input
+                      id="patientName"
+                      placeholder="John Doe"
+                      value={formData.patientName}
+                      onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="patientAge">Age</Label>
-                    <Input id="patientAge" type="number" placeholder="25" />
+                    <Input
+                      id="patientAge"
+                      type="number"
+                      placeholder="25"
+                      value={formData.patientAge}
+                      onChange={(e) => setFormData({ ...formData, patientAge: e.target.value })}
+                    />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="patientPhone">Phone Number</Label>
-                    <Input id="patientPhone" type="tel" placeholder="+1 (555) 000-0000" />
+                    <PhoneInput
+                      value={formData.patientPhone}
+                      onChange={(value) => setFormData({ ...formData, patientPhone: value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="patientEmail">Email</Label>
-                    <Input id="patientEmail" type="email" placeholder="john@example.com" />
+                    <Input
+                      id="patientEmail"
+                      type="email"
+                      placeholder="john@example.com"
+                      value={formData.patientEmail}
+                      onChange={(e) => setFormData({ ...formData, patientEmail: e.target.value })}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -167,6 +272,8 @@ export function PrescriptionUploadPage() {
                     id="address"
                     placeholder="Enter your complete delivery address"
                     rows={3}
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -175,6 +282,8 @@ export function PrescriptionUploadPage() {
                     id="notes"
                     placeholder="Any special instructions or allergies"
                     rows={3}
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   />
                 </div>
               </CardContent>
@@ -223,8 +332,13 @@ export function PrescriptionUploadPage() {
                   </div>
                 </div>
 
-                <Button className="w-full mt-6" size="lg" onClick={handleSubmit} disabled={files.length === 0}>
-                  Submit Prescription
+                <Button
+                  className="w-full mt-6"
+                  size="lg"
+                  onClick={handleSubmit}
+                  disabled={files.length === 0 || isLoading}
+                >
+                  {isLoading ? 'Submitting...' : 'Submit Prescription'}
                 </Button>
               </CardContent>
             </Card>

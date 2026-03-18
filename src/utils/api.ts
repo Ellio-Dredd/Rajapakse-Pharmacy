@@ -138,14 +138,13 @@ export const appointmentsAPI = {
   },
   
   cancel: async (id: string) => {
-    return apiCall(`/appointments/${id}/cancel`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: 'cancelled' }),
+    return apiCall(`/appointments/${id}`, {
+      method: 'DELETE',
     });
   },
   
   delete: async (id: string) => {
-    return apiCall(`/appointments/${id}`, {
+    return apiCall(`/appointments/${id}/permanent`, {
       method: 'DELETE',
     });
   },
@@ -169,6 +168,12 @@ export const prescriptionsAPI = {
     return apiCall(`/prescriptions/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+    });
+  },
+  
+  delete: async (id: string) => {
+    return apiCall(`/prescriptions/${id}`, {
+      method: 'DELETE',
     });
   },
 };
@@ -195,6 +200,24 @@ export const usersAPI = {
     return apiCall(`/users/${id}/role`, {
       method: 'PATCH',
       body: JSON.stringify({ role }),
+    });
+  },
+  
+  deactivate: async (id: string) => {
+    return apiCall(`/users/${id}/deactivate`, {
+      method: 'PATCH',
+    });
+  },
+  
+  activate: async (id: string) => {
+    return apiCall(`/users/${id}/activate`, {
+      method: 'PATCH',
+    });
+  },
+  
+  delete: async (id: string) => {
+    return apiCall(`/users/${id}`, {
+      method: 'DELETE',
     });
   },
 };
