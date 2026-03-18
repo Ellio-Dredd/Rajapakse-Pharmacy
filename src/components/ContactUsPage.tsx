@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Send, Navigation } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -193,59 +193,78 @@ export function ContactUsPage() {
               </Card>
             </div>
 
-            {/* Map & Additional Info */}
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-3xl mb-6">Visit Our Store</h2>
-                <Card className="border-none shadow-lg overflow-hidden">
-                  <div className="h-80 bg-muted relative">
-                    <img
-                      src="https://images.unsplash.com/photo-1559305616-3b4d3b13912c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080"
-                      alt="Store Location"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <CardContent className="p-6">
-                    <h3 className="font-semibold mb-3">Rajapakse Pharmacy</h3>
-                    <div className="space-y-3 text-sm text-muted-foreground">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                        <span>No.456, Kurunagala Road, Newtown Madampe, Sri Lanka</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <Phone className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                        <span>0322247833</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <Mail className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                        <span>Rajapaksepharmacypvt@gmail.com</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* FAQ Section */}
-              <Card className="border-none shadow-lg">
+            {/* Map */}
+            <div>
+              <h2 className="text-3xl mb-6">Visit Our Store</h2>
+              <Card className="border-none shadow-lg overflow-hidden">
+                <div className="h-80 bg-muted relative">
+                  <iframe
+                    src="https://www.google.com/maps?q=7.495831543072545,79.84257407116415&output=embed"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Rajapakse Pharmacy Location"
+                    className="w-full h-full"
+                  ></iframe>
+                </div>
                 <CardContent className="p-6">
-                  <h3 className="font-semibold mb-4">Frequently Asked Questions</h3>
-                  <div className="space-y-4 text-sm">
-                    <div>
-                      <p className="font-medium text-foreground mb-1">What are your delivery hours?</p>
-                      <p className="text-muted-foreground">We deliver Monday to Saturday, 9:00 AM - 6:00 PM.</p>
+                  <h3 className="font-semibold mb-3">Rajapakse Pharmacy</h3>
+                  <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span>No.456, Kurunagala Road, Newtown Madampe, Sri Lanka</span>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground mb-1">Do you accept prescriptions online?</p>
-                      <p className="text-muted-foreground">Yes! You can upload prescriptions through our prescription upload page.</p>
+                    <div className="flex items-start gap-2">
+                      <Phone className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span>0322247833</span>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground mb-1">Can I consult with a doctor online?</p>
-                      <p className="text-muted-foreground">Yes, we offer online doctor consultations. Visit our doctors page to book an appointment.</p>
+                    <div className="flex items-start gap-2">
+                      <Mail className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span>Rajapaksepharmacypvt@gmail.com</span>
                     </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t">
+                    <a
+                      href="https://maps.app.goo.gl/EJ6mnH5LaKJqt51x6?g_st=aw"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block w-full"
+                    >
+                      <Button variant="outline" className="w-full" size="lg">
+                        <Navigation className="mr-2 h-4 w-4" />
+                        Open in Google Maps
+                      </Button>
+                    </a>
                   </div>
                 </CardContent>
               </Card>
             </div>
+          </div>
+
+          {/* FAQ Section - Centered */}
+          <div className="max-w-3xl mx-auto mt-16">
+            <h2 className="text-3xl mb-6 text-center">Frequently Asked Questions</h2>
+            <Card className="border-none shadow-lg">
+              <CardContent className="p-8">
+                <div className="space-y-6">
+                  <div>
+                    <p className="font-semibold text-foreground mb-2">What are your delivery hours?</p>
+                    <p className="text-muted-foreground">We deliver Monday to Saturday, 9:00 AM - 6:00 PM.</p>
+                  </div>
+                  <div className="pt-4 border-t">
+                    <p className="font-semibold text-foreground mb-2">Do you accept prescriptions online?</p>
+                    <p className="text-muted-foreground">Yes! You can upload prescriptions through our prescription upload page.</p>
+                  </div>
+                  <div className="pt-4 border-t">
+                    <p className="font-semibold text-foreground mb-2">Can I consult with a doctor online?</p>
+                    <p className="text-muted-foreground">Yes, we offer online doctor consultations. Visit our doctors page to book an appointment.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

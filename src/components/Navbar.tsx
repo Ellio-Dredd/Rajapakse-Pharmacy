@@ -1,4 +1,4 @@
-import { ShoppingCart, User, Upload, LogOut, UserCircle } from 'lucide-react';
+import { ShoppingCart, User, Upload, LogOut, UserCircle, Menu, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { useNavigate, useLocation } from 'react-router';
 import { useState, useEffect } from 'react';
@@ -26,6 +26,7 @@ export function Navbar({ cartItemCount = 0, onCartClick, onLoginClick }: NavbarP
   const location = useLocation();
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Check user session and fetch user data
   useEffect(() => {
@@ -128,16 +129,16 @@ export function Navbar({ cartItemCount = 0, onCartClick, onLoginClick }: NavbarP
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-8">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-4 sm:gap-8">
           <button 
             onClick={() => navigate('/')}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <img src={logo} alt="Rajapakse Pharmacy" className="h-10 w-10 object-contain" />
-            <span className="text-xl font-semibold text-foreground">Rajapakse Pharmacy</span>
+            <img src={logo} alt="Rajapakse Pharmacy" className="h-8 w-8 sm:h-10 sm:w-10 object-contain" />
+            <span className="text-base sm:text-xl font-semibold text-foreground">Rajapakse Pharmacy</span>
           </button>
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden lg:flex items-center gap-6">
             <button 
               onClick={() => navigate('/products')}
               className={`text-sm transition-colors ${
@@ -169,13 +170,14 @@ export function Navbar({ cartItemCount = 0, onCartClick, onLoginClick }: NavbarP
                   }`}
                 >
                   <Upload className="h-4 w-4" />
-                  Upload Prescription
+                  <span className="hidden xl:inline">Upload Prescription</span>
+                  <span className="inline xl:hidden">Prescription</span>
                 </button>
               </>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {user && (
             <Button
               variant="ghost"
@@ -193,16 +195,16 @@ export function Navbar({ cartItemCount = 0, onCartClick, onLoginClick }: NavbarP
           )}
           
           {loading ? (
-            <Button variant="outline" size="sm" disabled>
+            <Button variant="outline" size="sm" disabled className="hidden sm:flex">
               <User className="h-4 w-4 mr-2" />
               Loading...
             </Button>
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="hidden sm:flex">
                   <UserCircle className="h-4 w-4 mr-2" />
-                  {user.name}
+                  <span className="max-w-[100px] truncate">{user.name}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -222,13 +224,103 @@ export function Navbar({ cartItemCount = 0, onCartClick, onLoginClick }: NavbarP
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="outline" size="sm" onClick={handleLoginClick}>
+            <Button variant="outline" size="sm" onClick={handleLoginClick} className="hidden sm:flex">
               <User className="h-4 w-4 mr-2" />
               Login
             </Button>
           )}
+
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden border-t bg-white">
+          <div className="container mx-auto px-4 py-4 space-y-3">
+            <button 
+              onClick={() => {
+                navigate('/products');
+                setMobileMenuOpen(false);
+              }}
+              className={`block w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                isActive('/products') 
+                  ? 'bg-primary/10 text-primary font-medium' 
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              Shop
+            </button>
+            {user && (
+              <>
+                <button 
+                  onClick={() => {
+                    navigate('/doctors');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`block w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                    isActive('/doctors') || location.pathname.startsWith('/doctor')
+                      ? 'bg-primary/10 text-primary font-medium' 
+                      : 'text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  Doctors
+                </button>
+                <button 
+                  onClick={() => {
+                    navigate('/prescription');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                    isActive('/prescription') 
+                      ? 'bg-primary/10 text-primary font-medium' 
+                      : 'text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Prescription
+                </button>
+                <div className="border-t pt-3 mt-3">
+                  <div className="px-4 py-2 text-sm">
+                    <p className="font-medium">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2 w-full text-left px-4 py-2 rounded-lg transition-colors text-muted-foreground hover:bg-muted"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </button>
+                </div>
+              </>
+            )}
+            {!user && !loading && (
+              <button 
+                onClick={() => {
+                  handleLoginClick();
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-2 w-full text-left px-4 py-2 rounded-lg transition-colors text-muted-foreground hover:bg-muted"
+              >
+                <User className="h-4 w-4" />
+                Login
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

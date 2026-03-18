@@ -179,6 +179,60 @@ users.patch('/:id/role', async (c) => {
   }
 });
 
+// Soft delete user (deactivate)
+users.patch('/:id/deactivate', async (c) => {
+  try {
+    const id = c.req.param('id');
+    
+    const { data, error } = await supabase
+      .from('users')
+      .update({ 
+        status: 'inactive',
+        deleted_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error deactivating user:', error);
+      return errorResponse(error.message);
+    }
+    
+    return successResponse(data);
+  } catch (error) {
+    console.error('Exception in PATCH /users/:id/deactivate:', error);
+    return errorResponse('Failed to deactivate user');
+  }
+});
+
+// Activate user (reactivate)
+users.patch('/:id/activate', async (c) => {
+  try {
+    const id = c.req.param('id');
+    
+    const { data, error } = await supabase
+      .from('users')
+      .update({ 
+        status: 'active',
+        deleted_at: null
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error activating user:', error);
+      return errorResponse(error.message);
+    }
+    
+    return successResponse(data);
+  } catch (error) {
+    console.error('Exception in PATCH /users/:id/activate:', error);
+    return errorResponse('Failed to activate user');
+  }
+});
+
 // Delete user
 users.delete('/:id', async (c) => {
   try {
